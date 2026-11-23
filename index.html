@@ -54,11 +54,11 @@
         #paparazzi-flash {
             position: fixed;
             inset: 0;
-            background: radial-gradient(circle, rgba(255,255,255,0.92) 0%, rgba(244,114,182,0.35) 60%, transparent 100%);
+            background: radial-gradient(circle, rgba(250,204,21,0.18) 0%, rgba(244,114,182,0.22) 65%, transparent 100%);
             z-index: 80;
             pointer-events: none;
             opacity: 0;
-            transition: opacity 0.18s ease-out;
+            transition: opacity 0.35s ease-out;
         }
         #vogue-cover-frame {
             position: fixed;
@@ -242,18 +242,29 @@
         </div>
     </div>
 
-    <!-- EFECTO NEÓN EN TODA LA PANTALLA (FRASES CADA 3 MIN + PUBLICIDADES LED) -->
+    <!-- RECUADRO OPCIONAL DE CÁMARA DEL ANFITRIÓN (PiP TIKTOK-SAFE PARA PRESENCIA EN VIVO) -->
+    <div id="host-pip-container" class="hidden fixed bottom-24 right-3 z-[45] w-28 sm:w-36 rounded-2xl overflow-hidden border-2 border-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.5)] bg-slate-950">
+        <div class="relative w-full aspect-[3/4]">
+            <video id="host-pip-video" autoplay playsinline muted class="w-full h-full object-cover"></video>
+            <div class="absolute top-1.5 left-1.5 bg-rose-600/90 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span> HOST LIVE
+            </div>
+            <button onclick="toggleHostCamPiP()" class="absolute top-1 right-1 bg-slate-950/80 hover:bg-rose-600 text-white text-[9px] font-black w-5 h-5 rounded-full flex items-center justify-center" title="Apagar cámara PiP">✕</button>
+        </div>
+    </div>
+
+    <!-- MENSAJE NEÓN DISCRETO TIKTOK-SAFE (SIN ESTROBOSCOPIO AGRESIVO) -->
     <div id="fullscreen-neon-fx">
-        <div id="fullscreen-neon-border" class="fixed inset-2 sm:inset-3 rounded-3xl border-4 border-pink-400 pointer-events-none" style="box-shadow: inset 0 0 65px rgba(236,72,153,0.75), 0 0 40px rgba(34,211,238,0.65);"></div>
-        <div id="fullscreen-neon-card" class="neon-card-inner px-6 py-4 rounded-3xl bg-slate-950/65 border-2 border-white/60">
-            <div id="neon-fx-kicker" class="inline-block text-[10px] sm:text-xs font-black uppercase tracking-[0.25em] px-3.5 py-1 rounded-full bg-pink-500/30 border border-pink-300 text-pink-100 mb-2">
-                ⚡ MENSAJE EN VIVO • AURA LIVE STUDIO ⚡
+        <div id="fullscreen-neon-border" class="fixed inset-3 rounded-3xl border-2 border-cyan-400/50 pointer-events-none" style="box-shadow: inset 0 0 28px rgba(34,211,238,0.35);"></div>
+        <div id="fullscreen-neon-card" class="neon-card-inner px-6 py-4 rounded-3xl bg-slate-950/80 border-2 border-cyan-300/70">
+            <div id="neon-fx-kicker" class="inline-block text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] px-3.5 py-1 rounded-full bg-cyan-500/20 border border-cyan-300 text-cyan-100 mb-2">
+                ✨ AURA LIVE STUDIO • SHOW EN VIVO ✨
             </div>
-            <div id="neon-fx-headline" class="neon-headline-glow text-2xl sm:text-5xl md:text-6xl">
-                ❤️ ¡LIKE POR FAVOR! ❤️
+            <div id="neon-fx-headline" class="neon-headline-glow text-xl sm:text-4xl md:text-5xl">
+                ✨ ¡BIENVENIDOS AL SHOW EN VIVO! ✨
             </div>
-            <div id="neon-fx-sub" class="mt-2 text-xs sm:text-base font-black tracking-widest uppercase text-cyan-200">
-                DALE TAP TAP A LA PANTALLA Y APOYA EL SHOW
+            <div id="neon-fx-sub" class="mt-2 text-xs sm:text-sm font-black tracking-widest uppercase text-amber-200">
+                COMENTA TU RITMO TROPICAL Y TRAJE FAVORITO
             </div>
         </div>
     </div>
@@ -337,6 +348,10 @@
 
                 <button id="btn-hud-ads" onclick="openAuraAdsModal()" class="bg-gradient-to-r from-fuchsia-600 via-pink-500 to-cyan-500 text-white font-black text-[10px] px-2.5 py-1.5 rounded-xl border border-white shadow flex items-center gap-1 active:scale-95">
                     <span>📢</span> Neón/Ads
+                </button>
+
+                <button id="btn-hud-hostcam" onclick="toggleHostCamPiP()" class="bg-slate-800 hover:bg-emerald-900 text-emerald-300 border border-emerald-400/60 font-black text-[10px] px-2 py-1.5 rounded-xl flex items-center gap-1 active:scale-95" title="Activar cámara del anfitrión (PiP recomendado para TikTok LIVE)">
+                    <span>🎥</span> Host PiP
                 </button>
 
                 <button id="btn-hud-setup30m" onclick="openSetup30MinModal()" class="bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-400/60 font-black text-[10px] px-2.5 py-1.5 rounded-xl flex items-center gap-1">
@@ -845,9 +860,10 @@
                                 <option value="player">🔥 Dancer</option>
                                 <option value="subadmin" id="admin-opt-mod">🎧 Mod</option>
                             </select>
-                            <button onclick="createAuraUserFromAdmin()" class="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black rounded-xl px-2.5 py-1.5 text-xs shadow">➕</button>
+                            <button id="btn-admin-create-user" onclick="createAuraUserFromAdmin()" class="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black rounded-xl px-2.5 py-1.5 text-xs shadow">➕</button>
                         </div>
                     </div>
+                    <div id="admin-create-status" class="hidden mt-2 text-[10px] font-bold rounded-xl px-3 py-1.5 border"></div>
                 </div>
 
                 <div class="flex items-center justify-between text-[10px] text-gray-400 font-bold uppercase tracking-wider px-1">
@@ -923,7 +939,7 @@
         <div class="studio-deck rounded-3xl max-w-lg w-full p-4 sm:p-5 border-2 border-fuchsia-400/75 shadow-[0_0_40px_rgba(236,72,153,0.4)] flex flex-col gap-3 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
                 <div>
-                    <h2 class="font-display text-base sm:text-lg font-black text-amber-300">📢 Publicidades LED & Neón cada 1 Min</h2>
+                    <h2 class="font-display text-base sm:text-lg font-black text-amber-300">🛡️ Publicidades LED & Mensajes TikTok-Safe</h2>
                     <p id="aura-ad-owner-label" class="text-[10px] text-cyan-300 font-bold">Cuenta: @Admin</p>
                 </div>
                 <div class="flex items-center gap-1.5">
@@ -938,15 +954,15 @@
                 <div class="bg-slate-900/95 border border-fuchsia-500/40 rounded-2xl p-2.5 flex flex-col gap-2">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <div>
-                            <div class="text-[10px] font-black text-fuchsia-300 uppercase">⚡ Frases Neón en Pantalla (Cada 1 Minuto)</div>
-                            <div class="text-[10px] text-gray-300">Próximo mensaje automático en: <span id="neon-auto-countdown" class="font-display font-black text-cyan-300">01:00</span></div>
+                            <div class="text-[10px] font-black text-emerald-300 uppercase">🛡️ Mensajes de Comunidad TikTok-Safe (Cada 5 Min)</div>
+                            <div class="text-[10px] text-gray-300">Próximo mensaje suave en: <span id="neon-auto-countdown" class="font-display font-black text-cyan-300">05:00</span></div>
                         </div>
                         <div class="flex items-center gap-1.5 flex-wrap">
-                            <select id="neon-interval-select" onchange="setAutoNeonInterval(this.value)" class="bg-slate-950 border border-fuchsia-400/60 text-fuchsia-200 font-black text-[10px] px-2 py-1 rounded-lg outline-none">
-                                <option value="30">Cada 30s</option>
-                                <option value="60" selected>Cada 1 min</option>
-                                <option value="120">Cada 2 min</option>
+                            <select id="neon-interval-select" onchange="setAutoNeonInterval(this.value)" class="bg-slate-950 border border-emerald-400/60 text-emerald-200 font-black text-[10px] px-2 py-1 rounded-lg outline-none">
                                 <option value="180">Cada 3 min</option>
+                                <option value="300" selected>Cada 5 min (Seguro)</option>
+                                <option value="480">Cada 8 min</option>
+                                <option value="600">Cada 10 min</option>
                             </select>
                             <button id="btn-toggle-autoneon" onclick="toggleAutoNeonScheduler()" class="bg-emerald-600 text-white font-black text-[10px] px-2 py-1 rounded-lg border border-emerald-300">Auto: ON</button>
                             <button id="btn-toggle-dualbanners" onclick="toggleDualStageBanners()" class="bg-amber-500 text-slate-950 font-black text-[10px] px-2 py-1 rounded-lg border border-white">✨ Banners Arriba/Abajo: ON</button>
@@ -954,27 +970,28 @@
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-1.5">
-                        <button onclick="fireNeonCtaPhrase(0)" class="bg-pink-950/80 hover:bg-pink-900 border border-pink-400/60 rounded-xl px-2 py-1.5 text-[10px] font-black text-pink-200 text-left truncate">❤️ Like por favor</button>
-                        <button onclick="fireNeonCtaPhrase(1)" class="bg-rose-950/80 hover:bg-rose-900 border border-rose-400/60 rounded-xl px-2 py-1.5 text-[10px] font-black text-rose-200 text-left truncate">💖 Envía tu Quiéreme</button>
-                        <button onclick="fireNeonCtaPhrase(2)" class="bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-400/60 rounded-xl px-2 py-1.5 text-[10px] font-black text-cyan-200 text-left truncate">🔔 Suscríbete al canal</button>
-                        <button onclick="fireNeonCtaPhrase(3)" class="bg-amber-950/80 hover:bg-amber-900 border border-amber-400/60 rounded-xl px-2 py-1.5 text-[10px] font-black text-amber-200 text-left truncate">👆 Comparte & Tap Tap</button>
+                        <button onclick="fireNeonCtaPhrase(0)" class="bg-pink-950/80 hover:bg-pink-900 border border-pink-400/60 rounded-xl px-2 py-1.5 text-[10px] font-black text-pink-200 text-left truncate">✨ Bienvenidos al Show</button>
+                        <button onclick="fireNeonCtaPhrase(1)" class="bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-400/60 rounded-xl px-2 py-1.5 text-[10px] font-black text-cyan-200 text-left truncate">🎶 Pide tu ritmo en chat</button>
+                        <button onclick="fireNeonCtaPhrase(2)" class="bg-purple-950/80 hover:bg-purple-900 border border-purple-400/60 rounded-xl px-2 py-1.5 text-[10px] font-black text-purple-200 text-left truncate">👗 Moda & Coreografías</button>
+                        <button onclick="fireNeonCtaPhrase(3)" class="bg-amber-950/80 hover:bg-amber-900 border border-amber-400/60 rounded-xl px-2 py-1.5 text-[10px] font-black text-amber-200 text-left truncate">🌟 Gracias por acompañarnos</button>
                     </div>
                 </div>
 
-                <!-- 3 Botones Rápidos de Publicidad LED (Emiten con Efecto Neón en Toda la Pantalla) -->
+                <!-- 3 Botones Rápidos de Mensajes LED TikTok-Safe (Cero teléfonos, cero azar, cero promesas de premios) -->
                 <div class="flex flex-col gap-1.5">
                     <div class="flex items-center justify-between">
-                        <span class="text-[10px] font-black text-amber-300 uppercase">📺 Publicidades LED Guardadas (Clic para Emitir en Neón):</span>
+                        <span class="text-[10px] font-black text-amber-300 uppercase">📺 Mensajes LED del Show (TikTok-Safe):</span>
                         <button onclick="fireNextSavedLedAd()" class="text-[9px] font-black bg-amber-400 text-slate-950 px-2 py-0.5 rounded-lg">⏭️ Emitir Siguiente LED</button>
                     </div>
-                    <button id="aura-preset-1" onclick="emitLedAdNeon(this.innerText)" class="bg-slate-800/90 hover:bg-slate-700 text-left text-[10px] p-2 rounded-xl border border-yellow-400/40 text-yellow-200 font-bold">👍 Suscríbete al canal y deja tu like para apoyarnos</button>
-                    <button id="aura-preset-2" onclick="emitLedAdNeon(this.innerText)" class="bg-slate-800/90 hover:bg-slate-700 text-left text-[10px] p-2 rounded-xl border border-cyan-400/40 text-cyan-200 font-bold">💼 Servicios Digitales Model Bolivia para plataformas comerciales</button>
-                    <button id="aura-preset-3" onclick="emitLedAdNeon(this.innerText)" class="bg-slate-800/90 hover:bg-slate-700 text-left text-[10px] p-2 rounded-xl border border-pink-400/40 text-pink-200 font-bold">✨ Compra tu tratamiento estético dermatológico para aclarar la piel y obtén premios o beneficios</button>
+                    <button id="aura-preset-1" onclick="emitLedAdNeon(this.innerText)" class="bg-slate-800/90 hover:bg-slate-700 text-left text-[10px] p-2 rounded-xl border border-yellow-400/40 text-yellow-200 font-bold">✨ Bienvenidos a Aura Live Studio 2026 • Show de Alta Moda y Baile Tropical en Vivo</button>
+                    <button id="aura-preset-2" onclick="emitLedAdNeon(this.innerText)" class="bg-slate-800/90 hover:bg-slate-700 text-left text-[10px] p-2 rounded-xl border border-cyan-400/40 text-cyan-200 font-bold">🎶 Comenta en el chat qué ritmo tropical quieres ver: Salsa, Cumbia, Bachata o Merengue</button>
+                    <button id="aura-preset-3" onclick="emitLedAdNeon(this.innerText)" class="bg-slate-800/90 hover:bg-slate-700 text-left text-[10px] p-2 rounded-xl border border-pink-400/40 text-pink-200 font-bold">👗 Colección Editorial 2026 • 8 Siluetas de Alta Costura y Coreografías en Tiempo Real</button>
                 </div>
 
-                <!-- Anuncio Libre -->
+                <!-- Anuncio Libre con Validador Anti-Restricciones TikTok -->
                 <div class="border-t border-slate-800 pt-2">
-                    <textarea id="aura-custom-ad-text" rows="2" class="w-full bg-slate-950 border border-slate-600 rounded-xl p-2 text-xs text-white focus:border-amber-400 outline-none resize-none" placeholder="Escribe tu publicidad LED libre aquí..."></textarea>
+                    <div id="aura-ad-safety-warning" class="hidden mb-1.5 text-[10px] font-bold text-amber-200 bg-amber-950/90 border border-amber-400/60 rounded-xl px-2.5 py-1.5"></div>
+                    <textarea id="aura-custom-ad-text" oninput="previewAdSafetyCheck(this.value)" rows="2" class="w-full bg-slate-950 border border-slate-600 rounded-xl p-2 text-xs text-white focus:border-amber-400 outline-none resize-none" placeholder="Escribe un mensaje LED de entretenimiento (evita teléfonos, sorteos o premios)..."></textarea>
                     <button onclick="sendAuraCustomLedAd()" class="w-full mt-1.5 bg-gradient-to-r from-amber-400 via-pink-500 to-fuchsia-600 text-white text-xs font-black py-2 rounded-xl shadow-lg active:scale-95">
                         🚀 Emitir en Pantalla Neón LED & Guardar
                     </button>
@@ -1845,10 +1862,32 @@
                 lastDiagramRoutine: ''
             };
 
+            // Textura procedural de piel humana cálida con sombreado suave y porosidad sutil
+            const skinCanvas = document.createElement('canvas');
+            skinCanvas.width = 256;
+            skinCanvas.height = 256;
+            const sctx = skinCanvas.getContext('2d');
+            const baseCol = '#' + spec.skinHex.toString(16).padStart(6, '0');
+            const sGrad = sctx.createRadialGradient(128, 110, 18, 128, 128, 150);
+            sGrad.addColorStop(0, baseCol);
+            sGrad.addColorStop(0.75, baseCol);
+            sGrad.addColorStop(1, '#7c4a35');
+            sctx.fillStyle = sGrad;
+            sctx.fillRect(0, 0, 256, 256);
+            sctx.globalAlpha = 0.06;
+            for (let p = 0; p < 380; p++) {
+                sctx.fillStyle = p % 2 === 0 ? '#ffffff' : '#5c2d1b';
+                sctx.fillRect(Math.random() * 256, Math.random() * 256, 2, 2);
+            }
+            const skinTex = new THREE.CanvasTexture(skinCanvas);
+
             const matSkin = new THREE.MeshStandardMaterial({
-                color: spec.skinHex,
-                roughness: 0.42,
-                metalness: 0.03
+                map: skinTex,
+                color: 0xffffff,
+                emissive: 0x3b150c,
+                emissiveIntensity: 0.12,
+                roughness: 0.44,
+                metalness: 0.02
             });
             const fabricTex = createCoutureFabricTexture(spec.primaryHex, spec.secondaryHex, spec.accentHex, spec.fabricPattern);
             const bumpTex = createCoutureBumpTexture(spec.fabricPattern);
@@ -2177,71 +2216,179 @@
             choker.position.y = 0.06;
             rig.neck.add(neckCyl, choker);
 
-            rig.head.position.y = 0.24;
+            rig.head.position.y = 0.22;
             rig.neck.add(rig.head);
 
-            const cranium = new THREE.Mesh(new THREE.SphereGeometry(0.264, 28, 28), matSkin);
-            cranium.scale.set(0.89, 1.09, 0.95);
-            const jaw = new THREE.Mesh(new THREE.CylinderGeometry(0.180, 0.100, 0.18, 24), matSkin);
-            jaw.position.set(0, -0.120, 0.028);
-            jaw.scale.set(0.88, 1.0, 0.86);
-            const chin = new THREE.Mesh(new THREE.SphereGeometry(0.092, 18, 18), matSkin);
-            chin.scale.set(0.90, 0.66, 0.84);
-            chin.position.set(0, -0.196, 0.044);
-            rig.head.add(cranium, jaw, chin);
+            // Textura facial editorial 512x512 de alta definición (ojos almendrados realistas, iris con fibras, cejas pelo a pelo, rubor y labios gloss)
+            const faceCanvas = document.createElement('canvas');
+            faceCanvas.width = 512;
+            faceCanvas.height = 512;
+            const fctx = faceCanvas.getContext('2d');
+            const skinHexStr = '#' + spec.skinHex.toString(16).padStart(6, '0');
+            fctx.fillStyle = skinHexStr;
+            fctx.fillRect(0, 0, 512, 512);
+
+            // Sombreado anatómico del rostro (frente luminosa, sienes y mandíbula contorneadas)
+            const faceShade = fctx.createRadialGradient(256, 236, 40, 256, 256, 240);
+            faceShade.addColorStop(0, 'rgba(255,244,235,0.18)');
+            faceShade.addColorStop(0.55, 'rgba(255,255,255,0)');
+            faceShade.addColorStop(1, 'rgba(62,28,18,0.28)');
+            fctx.fillStyle = faceShade;
+            fctx.fillRect(0, 0, 512, 512);
+
+            // Rubor editorial natural en pómulos
+            [-1, 1].forEach(side => {
+                const bx = 256 + side * 66;
+                const bg = fctx.createRadialGradient(bx, 286, 4, bx, 286, 42);
+                bg.addColorStop(0, spec.isFemale ? 'rgba(225,105,125,0.28)' : 'rgba(185,105,85,0.14)');
+                bg.addColorStop(1, 'rgba(225,105,125,0)');
+                fctx.fillStyle = bg;
+                fctx.beginPath();
+                fctx.ellipse(bx, 286, 42, 26, 0, 0, Math.PI * 2);
+                fctx.fill();
+            });
+
+            // Ojos almendrados realistas (esclerótica sombreada, iris detallado, anillo limbal, pestañas y reflejo cristalino)
+            const irisPalette = ['#5c3a21', '#2f5d50', '#3b5998', '#7c4d25', '#4a3520'];
+            const irisCol = irisPalette[(spec.name.length) % irisPalette.length];
+            [-1, 1].forEach(side => {
+                const ex = 256 + side * 46;
+                const ey = 244;
+
+                // Sombra de cuenca orbital superior
+                const lidG = fctx.createRadialGradient(ex, ey - 8, 4, ex, ey - 8, 28);
+                lidG.addColorStop(0, 'rgba(72,38,30,0.34)');
+                lidG.addColorStop(1, 'rgba(72,38,30,0)');
+                fctx.fillStyle = lidG;
+                fctx.beginPath();
+                fctx.ellipse(ex, ey - 8, 28, 16, 0, 0, Math.PI * 2);
+                fctx.fill();
+
+                // Forma almendrada de la esclerótica
+                fctx.save();
+                fctx.beginPath();
+                fctx.moveTo(ex - 20 * side, ey + 2);
+                fctx.quadraticCurveTo(ex, ey - 13, ex + 20 * side, ey - 1);
+                fctx.quadraticCurveTo(ex, ey + 11, ex - 20 * side, ey + 2);
+                fctx.closePath();
+                fctx.fillStyle = '#f8f5f2';
+                fctx.fill();
+                fctx.clip();
+
+                // Iris con anillo limbal oscuro y pupila
+                const irG = fctx.createRadialGradient(ex, ey, 2, ex, ey, 11);
+                irG.addColorStop(0, '#111827');
+                irG.addColorStop(0.35, irisCol);
+                irG.addColorStop(0.82, '#2b1b12');
+                irG.addColorStop(1, '#090d16');
+                fctx.fillStyle = irG;
+                fctx.beginPath();
+                fctx.arc(ex, ey, 10.5, 0, Math.PI * 2);
+                fctx.fill();
+
+                // Pupila + destello catchlight de estudio
+                fctx.fillStyle = '#05070c';
+                fctx.beginPath();
+                fctx.arc(ex, ey, 4.8, 0, Math.PI * 2);
+                fctx.fill();
+                fctx.fillStyle = '#ffffff';
+                fctx.beginPath();
+                fctx.arc(ex - 3, ey - 3, 2.3, 0, Math.PI * 2);
+                fctx.fill();
+                fctx.fillStyle = 'rgba(255,255,255,0.65)';
+                fctx.beginPath();
+                fctx.arc(ex + 3.5, ey + 2.5, 1.1, 0, Math.PI * 2);
+                fctx.fill();
+                fctx.restore();
+
+                // Delineado superior fino y pestañas curvas
+                fctx.strokeStyle = '#120d0c';
+                fctx.lineWidth = spec.isFemale ? 3.2 : 2.2;
+                fctx.lineCap = 'round';
+                fctx.beginPath();
+                fctx.moveTo(ex - 20 * side, ey + 1);
+                fctx.quadraticCurveTo(ex, ey - 13.5, ex + 22 * side, ey - 2.5);
+                fctx.stroke();
+
+                // Cejas naturales arqueadas
+                fctx.strokeStyle = '#241711';
+                fctx.lineWidth = spec.isFemale ? 4.2 : 6.0;
+                fctx.beginPath();
+                fctx.moveTo(ex - 22 * side, ey - 22);
+                fctx.quadraticCurveTo(ex + 4 * side, ey - 31, ex + 24 * side, ey - 21);
+                fctx.stroke();
+            });
+
+            // Contorno sutil del puente nasal y sombra bajo la nariz
+            fctx.fillStyle = 'rgba(255,248,240,0.22)';
+            fctx.fillRect(253, 246, 6, 38);
+            fctx.fillStyle = 'rgba(70,32,20,0.25)';
+            fctx.beginPath();
+            fctx.ellipse(256, 290, 12, 4, 0, 0, Math.PI * 2);
+            fctx.fill();
+
+            // Labios naturales esculpidos con arco de Cupido y brillo gloss
+            const lipBase = spec.isFemale ? '#c84b68' : '#a85f56';
+            const lipDark = spec.isFemale ? '#8b2640' : '#7a3c35';
+            fctx.fillStyle = lipBase;
+            fctx.beginPath();
+            fctx.moveTo(232, 324);
+            fctx.quadraticCurveTo(246, 314, 256, 319);
+            fctx.quadraticCurveTo(266, 314, 280, 324);
+            fctx.quadraticCurveTo(256, 339, 232, 324);
+            fctx.closePath();
+            fctx.fill();
+            fctx.strokeStyle = lipDark;
+            fctx.lineWidth = 1.6;
+            fctx.beginPath();
+            fctx.moveTo(234, 324);
+            fctx.quadraticCurveTo(256, 327, 278, 324);
+            fctx.stroke();
+            // Brillo labial
+            fctx.fillStyle = 'rgba(255,255,255,0.42)';
+            fctx.beginPath();
+            fctx.ellipse(256, 330, 11, 2.6, 0, 0, Math.PI * 2);
+            fctx.fill();
+
+            const faceTex = new THREE.CanvasTexture(faceCanvas);
+            const matFace = new THREE.MeshStandardMaterial({
+                map: faceTex,
+                color: 0xffffff,
+                emissive: 0x3b150c,
+                emissiveIntensity: 0.10,
+                roughness: 0.42,
+                metalness: 0.02
+            });
+
+            // Proporción humana realista 1:7.8 (cabeza ovalada estilizada en vez de bola gigante)
+            rig.head.scale.set(0.80, 0.84, 0.82);
+
+            const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.245, 32, 28), matFace);
+            headMesh.scale.set(0.86, 1.12, 0.94);
+            // Alinear el centro UV (u=0.5) hacia +Z (frente del personaje)
+            headMesh.rotation.y = -Math.PI / 2;
+            rig.head.add(headMesh);
+
+            // Mandíbula fina y puente nasal 3D sutil fundido con la textura facial
+            const noseBridge = new THREE.Mesh(new THREE.CylinderGeometry(0.010, 0.017, 0.078, 12), matSkin);
+            noseBridge.position.set(0, -0.008, 0.228);
+            noseBridge.rotation.x = -0.18;
+            const noseTip = new THREE.Mesh(new THREE.SphereGeometry(0.015, 12, 12), matSkin);
+            noseTip.position.set(0, -0.042, 0.240);
+            rig.head.add(noseBridge, noseTip);
 
             [-1, 1].forEach(side => {
-                const cheek = new THREE.Mesh(new THREE.SphereGeometry(0.080, 14, 14), matSkin);
-                cheek.scale.set(0.85, 0.65, 0.72);
-                cheek.position.set(side * 0.140, -0.032, 0.180);
-                const ear = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 12), matSkin);
-                ear.scale.set(0.38, 1.15, 0.65);
-                ear.position.set(side * 0.245, -0.015, -0.01);
-                rig.head.add(cheek, ear);
+                const ear = new THREE.Mesh(new THREE.SphereGeometry(0.036, 12, 12), matSkin);
+                ear.scale.set(0.36, 1.18, 0.65);
+                ear.position.set(side * 0.212, -0.006, 0.005);
+                rig.head.add(ear);
                 if (spec.isFemale) {
-                    const earring = new THREE.Mesh(new THREE.OctahedronGeometry(0.030, 0), matGold);
-                    earring.scale.set(0.7, 1.6, 0.7);
-                    earring.position.set(side * 0.256, -0.082, -0.01);
+                    const earring = new THREE.Mesh(new THREE.OctahedronGeometry(0.022, 0), matGold);
+                    earring.scale.set(0.65, 1.45, 0.65);
+                    earring.position.set(side * 0.220, -0.064, 0.008);
                     rig.head.add(earring);
                 }
             });
-
-            const matSclera = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.15 });
-            const matIris = new THREE.MeshStandardMaterial({ color: spec.accentHex, roughness: 0.12, metalness: 0.25 });
-            const matDark = new THREE.MeshBasicMaterial({ color: 0x090d16 });
-            [-1, 1].forEach(side => {
-                const eye = new THREE.Mesh(new THREE.SphereGeometry(0.038, 16, 16), matSclera);
-                eye.scale.set(1.18, 0.84, 0.55);
-                eye.position.set(side * 0.086, 0.030, 0.234);
-                const iris = new THREE.Mesh(new THREE.SphereGeometry(0.022, 14, 14), matIris);
-                iris.scale.set(1.0, 1.0, 0.45);
-                iris.position.set(side * 0.086, 0.030, 0.252);
-                const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.011, 10, 10), matDark);
-                pupil.position.set(side * 0.086, 0.030, 0.259);
-                const spark = new THREE.Mesh(new THREE.SphereGeometry(0.005, 8, 8), matSclera);
-                spark.position.set(side * 0.086 + 0.007, 0.037, 0.263);
-                const eyelid = new THREE.Mesh(new THREE.TorusGeometry(0.040, 0.007, 8, 16, Math.PI), matSkin);
-                eyelid.position.set(side * 0.086, 0.034, 0.244);
-                const lash = new THREE.Mesh(new THREE.TorusGeometry(0.041, 0.005, 6, 16, Math.PI * 0.9), matDark);
-                lash.position.set(side * 0.086, 0.033, 0.248);
-                const brow = new THREE.Mesh(new THREE.TorusGeometry(0.054, 0.0065, 8, 14, Math.PI * 0.72), matDark);
-                brow.position.set(side * 0.088, 0.072, 0.238);
-                brow.rotation.z = Math.PI * 0.14 + side * -0.08;
-                rig.head.add(eye, iris, pupil, spark, eyelid, lash, brow);
-            });
-
-            const nose = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.020, 0.086, 12), matSkin);
-            nose.position.set(0, -0.006, 0.258);
-            nose.rotation.x = -0.22;
-            const noseTip = new THREE.Mesh(new THREE.SphereGeometry(0.019, 12, 12), matSkin);
-            noseTip.position.set(0, -0.042, 0.272);
-            const lipMat = new THREE.MeshStandardMaterial({ color: spec.isFemale ? 0xd9386a : 0xb05a52, roughness: 0.22, metalness: 0.08 });
-            const upperLip = new THREE.Mesh(new THREE.TorusGeometry(0.026, 0.009, 8, 16, Math.PI), lipMat);
-            upperLip.position.set(0, -0.106, 0.248);
-            const lowerLip = new THREE.Mesh(new THREE.TorusGeometry(0.028, 0.010, 8, 16, Math.PI), lipMat);
-            lowerLip.rotation.z = Math.PI;
-            lowerLip.position.set(0, -0.102, 0.248);
-            rig.head.add(nose, noseTip, upperLip, lowerLip);
 
             const hairCap = new THREE.Mesh(new THREE.SphereGeometry(0.278, 26, 26, 0, Math.PI * 2, 0, Math.PI * 0.56), matHair);
             hairCap.scale.set(0.92, 1.07, 0.97);
@@ -2303,9 +2450,14 @@
                 starTiara.position.set(0, 0.34, 0.16);
                 rig.head.add(starTiara);
             } else {
-                for (let w = -1; w <= 1; w++) {
-                    const lock = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.11, 0.64, 14), matHair);
-                    lock.position.set(w * 0.12, -0.14, -0.16);
+                for (let w = -2; w <= 2; w++) {
+                    const curve = new THREE.CatmullRomCurve3([
+                        new THREE.Vector3(w * 0.075, 0.16, -0.08),
+                        new THREE.Vector3(w * 0.105, -0.06, -0.18),
+                        new THREE.Vector3(w * 0.095, -0.32, -0.14),
+                        new THREE.Vector3(w * 0.115, -0.54, -0.19)
+                    ]);
+                    const lock = new THREE.Mesh(new THREE.TubeGeometry(curve, 14, 0.044, 10, false), matHair);
                     rig.hairRig.add(lock);
                 }
             }
@@ -2352,10 +2504,21 @@
                 elbowGrp.add(wristGrp);
 
                 const handMat = hasOperaGloves ? foreMat : (spec.propType === 'chrome_gauntlet' && !isLeft ? matChrome : matSkin);
-                const palm = new THREE.Mesh(new THREE.SphereGeometry(0.042, 14, 14), handMat);
-                palm.scale.set(0.82, 1.25, 0.48);
-                palm.position.y = -0.045;
+                const palm = new THREE.Mesh(new THREE.BoxGeometry(0.064, 0.072, 0.026), handMat);
+                palm.position.y = -0.038;
                 wristGrp.add(palm);
+                for (let f = 0; f < 4; f++) {
+                    const fx = -0.024 + f * 0.016;
+                    const fLen = (f === 1 || f === 2) ? 0.058 : 0.048;
+                    const finger = new THREE.Mesh(new THREE.CylinderGeometry(0.0065, 0.005, fLen, 8), handMat);
+                    finger.position.set(fx, -0.074 - fLen * 0.45, 0.004);
+                    finger.rotation.x = 0.14;
+                    wristGrp.add(finger);
+                }
+                const thumb = new THREE.Mesh(new THREE.CylinderGeometry(0.0075, 0.006, 0.044, 8), handMat);
+                thumb.position.set(-side * 0.038, -0.046, 0.012);
+                thumb.rotation.z = side * 0.55;
+                wristGrp.add(thumb);
             }
             buildArticulatedArm(true);
             buildArticulatedArm(false);
@@ -2439,71 +2602,511 @@
         // ============================================================================
         // 6. ESCENARIO CUBO INFINITO LED + 5 PLATAFORMAS HIDRÁULICAS + LÁSERES VOLUMÉTRICOS
         // ============================================================================
-        function buildNextGenConcertArena() {
-            // Piso Espejo Oscuro de Pasarela
-            const floor = new THREE.Mesh(
-                new THREE.PlaneGeometry(70, 70),
-                new THREE.MeshPhongMaterial({ color: 0x050814, specular: 0x38bdf8, shininess: 100 })
+        let tropicalPalmFronds = [];
+
+        function createBuildingWindowTexture(baseHex, litHex1, litHex2) {
+            const c = document.createElement('canvas');
+            c.width = 128;
+            c.height = 256;
+            const ctx = c.getContext('2d');
+            ctx.fillStyle = baseHex;
+            ctx.fillRect(0, 0, 128, 256);
+            for (let y = 10; y < 246; y += 14) {
+                for (let x = 8; x < 120; x += 14) {
+                    const r = Math.random();
+                    if (r > 0.34) {
+                        ctx.fillStyle = r > 0.72 ? litHex1 : litHex2;
+                        ctx.fillRect(x, y, 8, 8);
+                    } else {
+                        ctx.fillStyle = 'rgba(15,23,42,0.75)';
+                        ctx.fillRect(x, y, 8, 8);
+                    }
+                }
+            }
+            const t = new THREE.CanvasTexture(c);
+            t.wrapS = THREE.RepeatWrapping;
+            t.wrapT = THREE.RepeatWrapping;
+            return t;
+        }
+
+        function buildSantaCruz360Panorama() {
+            tropicalPalmFronds = [];
+
+            // 1. Cúpula 360° Equirectangular Realista de Atardecer Tropical en Santa Cruz de la Sierra
+            const skyCanvas = document.createElement('canvas');
+            skyCanvas.width = 2048;
+            skyCanvas.height = 1024;
+            const ctx = skyCanvas.getContext('2d');
+            const skyGrad = ctx.createLinearGradient(0, 0, 0, 1024);
+            skyGrad.addColorStop(0.00, '#070b24');
+            skyGrad.addColorStop(0.24, '#1b1442');
+            skyGrad.addColorStop(0.42, '#5c1d56');
+            skyGrad.addColorStop(0.50, '#d95b54');
+            skyGrad.addColorStop(0.55, '#fbbf24');
+            skyGrad.addColorStop(0.60, '#2c1638');
+            skyGrad.addColorStop(0.76, '#0f172a');
+            skyGrad.addColorStop(1.00, '#050814');
+            ctx.fillStyle = skyGrad;
+            ctx.fillRect(0, 0, 2048, 1024);
+
+            // Sol tropical descendiendo en el horizonte de Santa Cruz
+            const sunGrad = ctx.createRadialGradient(1024, 520, 18, 1024, 520, 280);
+            sunGrad.addColorStop(0, 'rgba(255,251,235,0.95)');
+            sunGrad.addColorStop(0.25, 'rgba(253,224,71,0.58)');
+            sunGrad.addColorStop(0.60, 'rgba(244,114,182,0.22)');
+            sunGrad.addColorStop(1, 'rgba(244,114,182,0)');
+            ctx.fillStyle = sunGrad;
+            ctx.fillRect(720, 240, 620, 420);
+
+            // Nubes tropicales cálidas iluminadas por el atardecer
+            for (let i = 0; i < 42; i++) {
+                const cx = Math.random() * 2048;
+                const cy = 320 + Math.random() * 195;
+                const rw = 90 + Math.random() * 180;
+                const rh = 16 + Math.random() * 26;
+                const cg = ctx.createRadialGradient(cx, cy, 4, cx, cy, rw);
+                cg.addColorStop(0, 'rgba(255,215,170,0.34)');
+                cg.addColorStop(0.55, 'rgba(236,72,153,0.16)');
+                cg.addColorStop(1, 'rgba(236,72,153,0)');
+                ctx.fillStyle = cg;
+                ctx.beginPath();
+                ctx.ellipse(cx, cy, rw, rh, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Estrellas sutiles en la parte alta del cielo tropical
+            ctx.fillStyle = 'rgba(255,255,255,0.75)';
+            for (let s = 0; s < 260; s++) {
+                ctx.fillRect(Math.random() * 2048, Math.random() * 340, 1.8, 1.8);
+            }
+
+            // Horizonte lejano 360° de luces urbanas de Santa Cruz de la Sierra
+            for (let x = 0; x < 2048; x += 18) {
+                const bh = 22 + Math.random() * 72;
+                ctx.fillStyle = '#130e24';
+                ctx.fillRect(x, 540 - bh, 15, bh + 80);
+                for (let wy = 540 - bh + 6; wy < 548; wy += 9) {
+                    if (Math.random() > 0.45) {
+                        ctx.fillStyle = Math.random() > 0.35 ? '#fde68a' : '#7dd3fc';
+                        ctx.fillRect(x + 3, wy, 4, 4);
+                    }
+                }
+            }
+
+            const skyTex = new THREE.CanvasTexture(skyCanvas);
+            const skyDome = new THREE.Mesh(
+                new THREE.SphereGeometry(175, 48, 28),
+                new THREE.MeshBasicMaterial({ map: skyTex, side: THREE.BackSide, fog: false })
             );
-            floor.rotation.x = -Math.PI / 2;
-            scene.add(floor);
+            scene.add(skyDome);
 
-            // Túnel Infinito de 10 Portales Hexagonales/Octogonales LED en Perspectiva
+            // 2. Anillo Urbano 360° de Santa Cruz de la Sierra (Torres Equipetrol, Manzana 40, Catedral y Cristo Redentor)
+            const winTexWarm = createBuildingWindowTexture('#161c33', '#fde68a', '#fb923c');
+            const winTexCool = createBuildingWindowTexture('#101c30', '#7dd3fc', '#fef08a');
+            const terracottaMat = new THREE.MeshStandardMaterial({ color: 0xb4533c, roughness: 0.72, metalness: 0.08 });
+            const marbleMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.35, metalness: 0.12 });
+            const goldAccentMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, emissive: 0xd97706, emissiveIntensity: 0.35, metalness: 0.85, roughness: 0.2 });
+
+            // Torres Gemelas Manzana 40 / Equipetrol (Fondo Norte-Oeste)
+            [-1, 1].forEach((side) => {
+                const tower = new THREE.Mesh(
+                    new THREE.BoxGeometry(5.8, 34, 5.8),
+                    new THREE.MeshStandardMaterial({ map: winTexCool, metalness: 0.65, roughness: 0.22 })
+                );
+                tower.position.set(-14 + side * 4.2, 17, -48);
+                const crown = new THREE.Mesh(new THREE.BoxGeometry(6.1, 0.7, 6.1), goldAccentMat);
+                crown.position.set(-14 + side * 4.2, 34.3, -48);
+                scene.add(tower, crown);
+            });
+
+            // Catedral Metropolitana Basílica de San Lorenzo (Plaza 24 de Septiembre - Fondo Este)
+            const cathedralGrp = new THREE.Group();
+            const nave = new THREE.Mesh(new THREE.BoxGeometry(13, 11, 7), terracottaMat);
+            nave.position.y = 5.5;
+            cathedralGrp.add(nave);
+            [-4.6, 4.6].forEach(tx => {
+                const bellTower = new THREE.Mesh(new THREE.BoxGeometry(3.4, 18.5, 3.4), terracottaMat);
+                bellTower.position.set(tx, 9.25, 0.8);
+                const dome = new THREE.Mesh(new THREE.SphereGeometry(1.75, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.55), goldAccentMat);
+                dome.position.set(tx, 18.5, 0.8);
+                cathedralGrp.add(bellTower, dome);
+            });
+            const roseWin = new THREE.Mesh(new THREE.CircleGeometry(1.5, 20), new THREE.MeshBasicMaterial({ color: 0xfde047 }));
+            roseWin.position.set(0, 7.2, 3.55);
+            cathedralGrp.add(roseWin);
+            cathedralGrp.position.set(22, 0, -44);
+            cathedralGrp.rotation.y = -0.38;
+            scene.add(cathedralGrp);
+
+            // Monumento Cristo Redentor (Avenida Monseñor Rivero / 2do Anillo - Lateral Izquierdo)
+            const cristoGrp = new THREE.Group();
+            const pedestal = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 2.5, 9.5, 8), marbleMat);
+            pedestal.position.y = 4.75;
+            const statueBody = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.95, 7.5, 12), marbleMat);
+            statueBody.position.y = 13.2;
+            const statueArms = new THREE.Mesh(new THREE.BoxGeometry(7.2, 0.75, 0.75), marbleMat);
+            statueArms.position.y = 15.6;
+            const statueHead = new THREE.Mesh(new THREE.SphereGeometry(0.65, 12, 12), marbleMat);
+            statueHead.position.y = 17.5;
+            const haloLight = new THREE.Mesh(new THREE.TorusGeometry(2.8, 0.10, 8, 24), goldAccentMat);
+            haloLight.rotation.x = Math.PI / 2;
+            haloLight.position.y = 0.25;
+            cristoGrp.add(pedestal, statueBody, statueArms, statueHead, haloLight);
+            cristoGrp.position.set(-36, 0, -18);
+            cristoGrp.rotation.y = 0.95;
+            scene.add(cristoGrp);
+
+            // 26 Edificios modernos y coloniales rodeando los 360° de la ciudad tropical
+            for (let i = 0; i < 26; i++) {
+                const ang = (i / 26) * Math.PI * 2;
+                const rad = 46 + (i % 3) * 9;
+                const bx = Math.sin(ang) * rad;
+                const bz = Math.cos(ang) * rad;
+                // Evitar solapar exactamente con Manzana 40 o Catedral
+                if (bz < -36 && Math.abs(bx + 14) < 12) continue;
+                if (bz < -34 && Math.abs(bx - 22) < 12) continue;
+                const h = 10 + (i % 5) * 5.2 + Math.random() * 6;
+                const w = 4.2 + (i % 3) * 1.8;
+                const bMat = new THREE.MeshStandardMaterial({
+                    map: i % 2 === 0 ? winTexWarm : winTexCool,
+                    metalness: 0.45,
+                    roughness: 0.35
+                });
+                const bldg = new THREE.Mesh(new THREE.BoxGeometry(w, h, w), bMat);
+                bldg.position.set(bx, h * 0.5, bz);
+                bldg.lookAt(0, h * 0.5, 0);
+                scene.add(bldg);
+            }
+
+            // 3. 16 Palmeras Reales Tropicales 3D alrededor de la terraza 360° (mecidas por la brisa cruceña)
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x6b4f3a, roughness: 0.85, metalness: 0.04 });
+            const frondMat = new THREE.MeshStandardMaterial({ color: 0x15803d, emissive: 0x052e16, emissiveIntensity: 0.18, roughness: 0.55, side: THREE.DoubleSide });
+            for (let p = 0; p < 16; p++) {
+                const ang = (p / 16) * Math.PI * 2 + 0.18;
+                const dist = 16.8 + (p % 2) * 3.8;
+                const palm = new THREE.Group();
+                const height = 7.8 + (p % 3) * 1.6;
+                const trunkCurve = new THREE.CatmullRomCurve3([
+                    new THREE.Vector3(0, 0, 0),
+                    new THREE.Vector3(0.35, height * 0.45, 0.15),
+                    new THREE.Vector3(0.15, height, -0.1)
+                ]);
+                const trunk = new THREE.Mesh(new THREE.TubeGeometry(trunkCurve, 10, 0.22, 8, false), trunkMat);
+                palm.add(trunk);
+
+                const crown = new THREE.Group();
+                crown.position.set(0.15, height, -0.1);
+                for (let f = 0; f < 7; f++) {
+                    const fang = (f / 7) * Math.PI * 2;
+                    const frondGeo = new THREE.ConeGeometry(0.55, 3.2, 4);
+                    frondGeo.scale(1, 1, 0.12);
+                    const frond = new THREE.Mesh(frondGeo, frondMat);
+                    frond.position.set(Math.cos(fang) * 1.35, -0.15, Math.sin(fang) * 1.35);
+                    frond.rotation.z = -Math.PI * 0.38;
+                    frond.rotation.y = -fang;
+                    crown.add(frond);
+                }
+                palm.add(crown);
+                palm.position.set(Math.sin(ang) * dist, 0, Math.cos(ang) * dist);
+                palm.rotation.y = ang;
+                scene.add(palm);
+                tropicalPalmFronds.push({ crown, phase: p * 0.65 });
+            }
+        }
+
+        let urbanTrafficCars = [];
+
+        function createUrbanPlazaFloorTexture() {
+            const c = document.createElement('canvas');
+            c.width = 1024;
+            c.height = 1024;
+            const ctx = c.getContext('2d');
+            // Base piedra travertino cálida de plaza urbana cruceña
+            ctx.fillStyle = '#2d2825';
+            ctx.fillRect(0, 0, 1024, 1024);
+
+            // Baldosas de piedra reales con juntas sutiles
+            const tile = 64;
+            for (let y = 0; y < 1024; y += tile) {
+                for (let x = 0; x < 1024; x += tile) {
+                    const shade = 38 + ((x / tile + y / tile) % 2) * 8 + Math.floor(Math.random() * 6);
+                    ctx.fillStyle = `rgb(${shade + 12}, ${shade + 6}, ${shade})`;
+                    ctx.fillRect(x + 2, y + 2, tile - 4, tile - 4);
+                }
+            }
+            // Medallón radial arquitectónico de la plaza central
+            ctx.strokeStyle = 'rgba(217, 179, 108, 0.55)';
+            ctx.lineWidth = 8;
+            [180, 320, 455].forEach(r => {
+                ctx.beginPath();
+                ctx.arc(512, 512, r, 0, Math.PI * 2);
+                ctx.stroke();
+            });
+            const tex = new THREE.CanvasTexture(c);
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            return tex;
+        }
+
+        function createAsphaltRoadTexture() {
+            const c = document.createElement('canvas');
+            c.width = 512;
+            c.height = 512;
+            const ctx = c.getContext('2d');
+            ctx.fillStyle = '#181a20';
+            ctx.fillRect(0, 0, 512, 512);
+            // Grano fino de asfalto real
+            for (let i = 0; i < 1600; i++) {
+                ctx.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.12)';
+                ctx.fillRect(Math.random() * 512, Math.random() * 512, 2, 2);
+            }
+            // Líneas viales discontinuas blancas
+            ctx.fillStyle = 'rgba(248, 250, 252, 0.72)';
+            for (let y = 16; y < 512; y += 64) {
+                ctx.fillRect(250, y, 12, 34);
+            }
+            const tex = new THREE.CanvasTexture(c);
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            tex.repeat.set(6, 6);
+            return tex;
+        }
+
+        function buildRealUrbanStreetPieces360() {
+            urbanTrafficCars = [];
+            const ironMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.75, roughness: 0.35 });
+            const woodMat = new THREE.MeshStandardMaterial({ color: 0x7c4a2d, roughness: 0.72, metalness: 0.05 });
+            const stoneMat = new THREE.MeshStandardMaterial({ color: 0x8b7e74, roughness: 0.78, metalness: 0.06 });
+            const creamStuccoMat = new THREE.MeshStandardMaterial({ color: 0xe7dfd5, roughness: 0.72, metalness: 0.04 });
+            const roofTileMat = new THREE.MeshStandardMaterial({ color: 0xa3432c, roughness: 0.68, metalness: 0.06 });
+            const lampGlowMat = new THREE.MeshBasicMaterial({ color: 0xfff3c4 });
+            const shrubMat = new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.78 });
+            const flowerPinkMat = new THREE.MeshStandardMaterial({ color: 0xdb2777, roughness: 0.55 });
+            const flowerCoralMat = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.55 });
+
+            // 1. Avenida Circular de Asfalto Real (360°) con Cordones de Acera y Pasos Peatonales
+            const roadRing = new THREE.Mesh(
+                new THREE.RingGeometry(17.2, 28.5, 64),
+                new THREE.MeshStandardMaterial({ map: createAsphaltRoadTexture(), roughness: 0.85, metalness: 0.05 })
+            );
+            roadRing.rotation.x = -Math.PI / 2;
+            roadRing.position.y = -0.02;
+            scene.add(roadRing);
+
+            // Línea divisoria amarilla central de la avenida circular + cordones de piedra
+            const laneLine = new THREE.Mesh(
+                new THREE.RingGeometry(22.75, 22.95, 64),
+                new THREE.MeshBasicMaterial({ color: 0xfacc15 })
+            );
+            laneLine.rotation.x = -Math.PI / 2;
+            laneLine.position.y = -0.005;
+            scene.add(laneLine);
+
+            const innerCurb = new THREE.Mesh(new THREE.TorusGeometry(17.1, 0.16, 8, 64), stoneMat);
+            innerCurb.rotation.x = Math.PI / 2;
+            innerCurb.position.y = 0.08;
+            const outerCurb = new THREE.Mesh(new THREE.TorusGeometry(28.6, 0.18, 8, 64), stoneMat);
+            outerCurb.rotation.x = Math.PI / 2;
+            outerCurb.position.y = 0.08;
+            scene.add(innerCurb, outerCurb);
+
+            // Pasos de cebra peatonales en los 4 puntos cardinales
+            const stripeMat = new THREE.MeshBasicMaterial({ color: 0xf1f5f9 });
+            for (let c = 0; c < 4; c++) {
+                const a = (c * Math.PI) / 2;
+                const grp = new THREE.Group();
+                for (let s = -2; s <= 2; s++) {
+                    const stripe = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 0.55), stripeMat);
+                    stripe.rotation.x = -Math.PI / 2;
+                    stripe.position.set(0, 0.005, s * 1.1);
+                    grp.add(stripe);
+                }
+                grp.position.set(Math.sin(a) * 22.8, 0, Math.cos(a) * 22.8);
+                grp.rotation.y = a;
+                scene.add(grp);
+            }
+
+            // 2. 12 Faroles Urbanos Coloniales-Modernos alrededor de los 360° de la Plaza
+            for (let i = 0; i < 12; i++) {
+                const ang = (i / 12) * Math.PI * 2;
+                const lamp = new THREE.Group();
+                const base = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.24, 0.65, 10), ironMat);
+                base.position.y = 0.32;
+                const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.09, 4.4, 10), ironMat);
+                pole.position.y = 2.5;
+                const crossBar = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.06, 0.06), ironMat);
+                crossBar.position.y = 4.6;
+                [-0.52, 0.52].forEach(lx => {
+                    const globe = new THREE.Mesh(new THREE.SphereGeometry(0.20, 12, 12), lampGlowMat);
+                    globe.position.set(lx, 4.78, 0);
+                    const cap = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.16, 8), ironMat);
+                    cap.position.set(lx, 5.02, 0);
+                    lamp.add(globe, cap);
+                });
+                // Halos cálidos suaves en el suelo bajo cada farol
+                const pool = new THREE.Mesh(
+                    new THREE.CircleGeometry(1.6, 16),
+                    new THREE.MeshBasicMaterial({ color: 0xfde68a, transparent: true, opacity: 0.12 })
+                );
+                pool.rotation.x = -Math.PI / 2;
+                pool.position.y = 0.025;
+                lamp.add(base, pole, crossBar, pool);
+                lamp.position.set(Math.sin(ang) * 15.6, 0, Math.cos(ang) * 15.6);
+                lamp.rotation.y = ang;
+                scene.add(lamp);
+            }
+
+            // 3. 8 Bancas de Plaza (Madera & Hierro Forjado) + 8 Maceteros Urbanos con Santa Rita / Buganvilias
+            for (let i = 0; i < 8; i++) {
+                const ang = (i / 8) * Math.PI * 2 + Math.PI / 8;
+                const bench = new THREE.Group();
+                const seat = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.10, 0.58), woodMat);
+                seat.position.y = 0.52;
+                const back = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.52, 0.08), woodMat);
+                back.position.set(0, 0.88, -0.24);
+                back.rotation.x = -0.18;
+                [-0.85, 0.85].forEach(bx => {
+                    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.52, 0.52), ironMat);
+                    leg.position.set(bx, 0.26, 0);
+                    bench.add(leg);
+                });
+                bench.add(seat, back);
+                bench.position.set(Math.sin(ang) * 14.3, 0, Math.cos(ang) * 14.3);
+                bench.lookAt(0, 0, 0);
+                scene.add(bench);
+
+                // Macetero de piedra con arbustos y flores tropicales al lado de la banca
+                const pAng = ang + 0.14;
+                const planter = new THREE.Group();
+                const box = new THREE.Mesh(new THREE.CylinderGeometry(0.72, 0.60, 0.65, 10), stoneMat);
+                box.position.y = 0.32;
+                const bush = new THREE.Mesh(new THREE.DodecahedronGeometry(0.68, 1), shrubMat);
+                bush.scale.set(1.1, 0.78, 1.1);
+                bush.position.y = 0.85;
+                planter.add(box, bush);
+                for (let f = 0; f < 5; f++) {
+                    const fl = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 8), i % 2 === 0 ? flowerPinkMat : flowerCoralMat);
+                    const fa = (f / 5) * Math.PI * 2;
+                    fl.position.set(Math.cos(fa) * 0.45, 0.98 + (f % 2) * 0.18, Math.sin(fa) * 0.45);
+                    planter.add(fl);
+                }
+                planter.position.set(Math.sin(pAng) * 15.2, 0, Math.cos(pAng) * 15.2);
+                scene.add(planter);
+            }
+
+            // 4. 4 Semáforos Urbanos en las Esquinas de la Avenida
+            for (let i = 0; i < 4; i++) {
+                const ang = (i * Math.PI) / 2 + 0.28;
+                const tl = new THREE.Group();
+                const post = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.11, 5.2, 8), ironMat);
+                post.position.y = 2.6;
+                const arm = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.10, 0.10), ironMat);
+                arm.position.set(1.1, 5.1, 0);
+                const head = new THREE.Mesh(new THREE.BoxGeometry(0.38, 1.05, 0.32), ironMat);
+                head.position.set(1.8, 4.85, 0);
+                const redL = new THREE.Mesh(new THREE.CircleGeometry(0.11, 10), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+                redL.position.set(1.8, 5.15, 0.17);
+                const yelL = new THREE.Mesh(new THREE.CircleGeometry(0.11, 10), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
+                yelL.position.set(1.8, 4.85, 0.17);
+                const grnL = new THREE.Mesh(new THREE.CircleGeometry(0.11, 10), new THREE.MeshBasicMaterial({ color: 0x22c55e }));
+                grnL.position.set(1.8, 4.55, 0.17);
+                tl.add(post, arm, head, redL, yelL, grnL);
+                tl.position.set(Math.sin(ang) * 17.4, 0, Math.cos(ang) * 17.4);
+                tl.rotation.y = ang + Math.PI / 2;
+                scene.add(tl);
+            }
+
+            // 5. Galerías Coloniales Cruceñas ("Recovas" con Columnas Blancas y Teja Terracota) alrededor de la Avenida (360°)
+            const warmShopMat = new THREE.MeshBasicMaterial({ color: 0xfef3c7 });
+            for (let r = 0; r < 10; r++) {
+                const ang = (r / 10) * Math.PI * 2 + 0.15;
+                const recova = new THREE.Group();
+                const body = new THREE.Mesh(new THREE.BoxGeometry(10.5, 5.4, 4.2), creamStuccoMat);
+                body.position.set(0, 2.7, -1.2);
+                const roof = new THREE.Mesh(new THREE.BoxGeometry(11.4, 0.55, 6.4), roofTileMat);
+                roof.position.set(0, 5.65, -0.3);
+                roof.rotation.x = 0.16;
+                const shopGlass = new THREE.Mesh(new THREE.PlaneGeometry(8.6, 2.6), warmShopMat);
+                shopGlass.position.set(0, 1.8, 0.92);
+                recova.add(body, roof, shopGlass);
+                // Columnas blancas de la recova peatonal
+                for (let col = -2; col <= 2; col++) {
+                    const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.21, 5.3, 10), creamStuccoMat);
+                    pillar.position.set(col * 2.35, 2.65, 2.15);
+                    recova.add(pillar);
+                }
+                recova.position.set(Math.sin(ang) * 33.5, 0, Math.cos(ang) * 33.5);
+                recova.lookAt(0, 0, 0);
+                scene.add(recova);
+            }
+
+            // 6. 8 Autos y Taxis Urbanos circulando suavemente en 2 carriles alrededor de la Plaza (360°)
+            const carColors = [0xf8fafc, 0x1e293b, 0xdc2626, 0x2563eb, 0xfacc15, 0x64748b, 0x0f766e, 0xe2e8f0];
+            const headLightMat = new THREE.MeshBasicMaterial({ color: 0xfffbeb });
+            const tailLightMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+            for (let c = 0; c < 8; c++) {
+                const car = new THREE.Group();
+                const cMat = new THREE.MeshStandardMaterial({ color: carColors[c], metalness: 0.65, roughness: 0.25 });
+                const chassis = new THREE.Mesh(new THREE.BoxGeometry(1.75, 0.62, 3.6), cMat);
+                chassis.position.y = 0.55;
+                const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.52, 0.58, 1.9), new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.85, roughness: 0.15 }));
+                cabin.position.set(0, 1.08, -0.15);
+                [-0.58, 0.58].forEach(lx => {
+                    const hl = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.16, 0.08), headLightMat);
+                    hl.position.set(lx, 0.62, 1.82);
+                    const tl = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.16, 0.08), tailLightMat);
+                    tl.position.set(lx, 0.62, -1.82);
+                    car.add(hl, tl);
+                });
+                car.add(chassis, cabin);
+                scene.add(car);
+                const innerLane = c % 2 === 0;
+                urbanTrafficCars.push({
+                    mesh: car,
+                    radius: innerLane ? 20.1 : 25.4,
+                    angle: (c / 8) * Math.PI * 2,
+                    speed: innerLane ? 0.14 : -0.12
+                });
+            }
+        }
+
+        function buildNextGenConcertArena() {
+            // 1. Entorno 360° Real de Ciudad Tropical: Santa Cruz de la Sierra al Atardecer
+            buildSantaCruz360Panorama();
+
+            // 2. Suelo Urbano Base + Plaza de Piedra Travertino Real (sin tubos ni conos artificiales)
+            const cityGround = new THREE.Mesh(
+                new THREE.CircleGeometry(145, 48),
+                new THREE.MeshStandardMaterial({ color: 0x161922, roughness: 0.88, metalness: 0.06 })
+            );
+            cityGround.rotation.x = -Math.PI / 2;
+            cityGround.position.y = -0.08;
+            scene.add(cityGround);
+
+            const plazaFloor = new THREE.Mesh(
+                new THREE.CylinderGeometry(16.9, 17.2, 0.14, 56),
+                new THREE.MeshStandardMaterial({ map: createUrbanPlazaFloorTexture(), roughness: 0.42, metalness: 0.18 })
+            );
+            plazaFloor.position.y = -0.06;
+            scene.add(plazaFloor);
+
+            // 3. Piezas Urbanas Reales 360° (Avenida, Faroles, Bancas, Maceteros, Semáforos, Recovas y Autos)
+            buildRealUrbanStreetPieces360();
+
+            // Mantener arreglos vacíos para compatibilidad total con efectos sin tubos ni barras de colores
             tunnelRings = [];
-            for (let i = 0; i < 10; i++) {
-                const ringMat = new THREE.MeshBasicMaterial({
-                    color: i % 2 === 0 ? 0xec4899 : 0x22d3ee
-                });
-                const ring = new THREE.Mesh(new THREE.TorusGeometry(5.2 + i * 0.25, 0.075, 10, 6), ringMat);
-                ring.position.set(0, 3.2, -2.2 - i * 1.65);
-                ring.rotation.z = i * 0.08;
-                scene.add(ring);
-                tunnelRings.push(ring);
-            }
-
-            // Ecualizador 3D Semicircular de 28 Columnas Luminosas
             equalizerBars3D = [];
-            for (let i = 0; i < 28; i++) {
-                const frac = i / 27;
-                const angle = Math.PI * 0.80 + frac * Math.PI * 0.40;
-                const radius = 8.4;
-                const barMat = new THREE.MeshBasicMaterial({
-                    color: i % 3 === 0 ? 0xfacc15 : (i % 2 === 0 ? 0xec4899 : 0x22d3ee)
-                });
-                const bar = new THREE.Mesh(new THREE.BoxGeometry(0.28, 1.0, 0.28), barMat);
-                bar.position.set(Math.sin(angle) * radius, 0.5, Math.cos(angle) * radius - 1.5);
-                scene.add(bar);
-                equalizerBars3D.push(bar);
-            }
-
-            // 6 Haces de Luz Volumétricos de Concierto desde la Cúpula
             overheadSpotCones = [];
-            for (let i = -2; i <= 2; i++) {
-                const pivot = new THREE.Group();
-                pivot.position.set(i * 2.1, 8.2, -1.5);
-                const coneMat = new THREE.MeshBasicMaterial({
-                    color: i % 2 === 0 ? 0x22d3ee : 0xff1493,
-                    transparent: true,
-                    opacity: 0.14,
-                    side: THREE.DoubleSide,
-                    depthWrite: false
-                });
-                const cone = new THREE.Mesh(new THREE.ConeGeometry(1.15, 8.6, 16, 1, true), coneMat);
-                cone.position.y = -4.3;
-                pivot.add(cone);
-                scene.add(pivot);
-                overheadSpotCones.push({ pivot, phase: i * 0.7 });
-            }
 
-            // 5 Plataformas Hidráulicas Hexagonales para el Escuadrón 5X
+            // 4. 5 Podios Arquitectónicos de Piedra Oscura y Bronce Cepillado (Plataformas Hidráulicas Urbanas)
             hydraulicPodMeshes = [];
-            const podMat = new THREE.MeshPhongMaterial({ color: 0x0f172a, specular: 0xfacc15, shininess: 95 });
-            const rimMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+            const podMat = new THREE.MeshStandardMaterial({ color: 0x262322, roughness: 0.38, metalness: 0.42 });
+            const rimMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, roughness: 0.25, metalness: 0.88 });
             for (let i = 0; i < 5; i++) {
                 const podGrp = new THREE.Group();
-                const cyl = new THREE.Mesh(new THREE.CylinderGeometry(0.92, 1.02, 2.4, 6), podMat);
+                const cyl = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 1.05, 2.4, 24), podMat);
                 cyl.position.y = -1.2;
-                const topRim = new THREE.Mesh(new THREE.TorusGeometry(0.92, 0.035, 8, 6), rimMat);
+                const topRim = new THREE.Mesh(new THREE.TorusGeometry(0.95, 0.032, 10, 32), rimMat);
                 topRim.rotation.x = Math.PI / 2;
                 topRim.position.y = 0.01;
                 podGrp.add(cyl, topRim);
@@ -3761,18 +4364,22 @@
             }
         }
 
-        function mapFirebaseAuthError(code) {
+        function mapFirebaseAuthError(code, fallbackMsg = '') {
             const map = {
                 'auth/invalid-email': 'El correo electrónico no tiene un formato válido.',
                 'auth/user-not-found': 'No existe una cuenta registrada con ese correo.',
                 'auth/wrong-password': 'Contraseña incorrecta. Intenta de nuevo o recupérala por correo.',
                 'auth/invalid-credential': 'Correo o contraseña incorrectos.',
-                'auth/email-already-in-use': 'Ese correo ya está registrado. Cambia a "Iniciar Sesión".',
+                'auth/email-already-in-use': 'Ese correo ya existe en Firebase Auth. Usa otro correo o inicia sesión con esa cuenta.',
                 'auth/weak-password': 'La contraseña debe tener al menos 6 caracteres.',
+                'auth/operation-not-allowed': 'Activa el proveedor "Correo electrónico/Contraseña" en Firebase Console → Authentication → Sign-in method.',
                 'auth/too-many-requests': 'Demasiados intentos. Espera un momento antes de reintentar.',
-                'auth/network-request-failed': 'Sin conexión con Firebase Auth. Verifica tu red.'
+                'auth/network-request-failed': 'Sin conexión con Firebase. Verifica tu red.',
+                'PERMISSION_DENIED': 'Permiso denegado en Realtime Database. Abre "🗄️ Base de Datos & Reglas", copia las reglas con tu UID de Superusuario y pégalas en Firebase Console.'
             };
-            return map[code] || 'Error de autenticación en Firebase. Verifica tus datos.';
+            if (code && map[code]) return map[code];
+            if (fallbackMsg && /permission_denied|permission denied/i.test(fallbackMsg)) return map['PERMISSION_DENIED'];
+            return fallbackMsg || 'Error de Firebase. Verifica tu configuración y reglas de seguridad.';
         }
 
         async function submitAuraAuthForm() {
@@ -3949,29 +4556,59 @@
             }
         }
 
+        function showAdminCreateStatus(msg, isError = false) {
+            const box = document.getElementById('admin-create-status');
+            if (!box) return;
+            box.innerText = msg;
+            box.className = isError
+                ? 'mt-2 text-[10px] font-bold rounded-xl px-3 py-1.5 border text-rose-200 bg-rose-950/80 border-rose-500/60'
+                : 'mt-2 text-[10px] font-bold rounded-xl px-3 py-1.5 border text-emerald-200 bg-emerald-950/80 border-emerald-500/60';
+            box.classList.remove('hidden');
+        }
+
         async function createAuraUserFromAdmin() {
             const me = getCurrentUserRecord();
-            if (!me || (me.role !== 'admin' && me.role !== 'subadmin')) return;
+            if (!me || (me.role !== 'admin' && me.role !== 'subadmin')) {
+                showAdminCreateStatus('🔒 Debes iniciar sesión como Superusuario o Moderador autorizado.', true);
+                return;
+            }
             const email = (document.getElementById('admin-new-email')?.value || '').trim().toLowerCase();
             let alias = (document.getElementById('admin-new-name')?.value || '').trim();
             const tempPass = (document.getElementById('admin-new-pass')?.value || '').trim();
             const role = document.getElementById('admin-new-role')?.value || 'player';
 
-            if (!email || !email.includes('@')) { showStudioToast('⚠️ Ingresa un correo electrónico válido.'); return; }
-            if (tempPass.length < 6) { showStudioToast('⚠️ La contraseña temporal debe tener al menos 6 caracteres.'); return; }
+            if (!email || !email.includes('@')) { showAdminCreateStatus('⚠️ Ingresa un correo electrónico válido.', true); return; }
+            if (tempPass.length < 6) { showAdminCreateStatus('⚠️ La contraseña temporal debe tener al menos 6 caracteres.', true); return; }
             if (role === 'subadmin' && me.role !== 'admin' && !me.canCreateSubAdmins) {
-                showStudioToast('🔒 No tienes privilegio para crear Moderadores.');
+                showAdminCreateStatus('🔒 No tienes privilegio para crear Moderadores.', true);
                 return;
             }
             if (!alias) alias = '@' + email.split('@')[0];
             if (!alias.startsWith('@')) alias = '@' + alias;
 
+            const btn = document.getElementById('btn-admin-create-user');
+            if (btn) { btn.disabled = true; btn.innerText = '⏳'; }
+            showAdminCreateStatus('⏳ Creando cuenta en Firebase Auth y guardando perfil en Realtime DB...', false);
+
             let secondaryApp = null;
             try {
                 const appName = 'auraAdminCreator_' + Date.now();
-                secondaryApp = firebase.initializeApp(AURA_FIREBASE_CONFIG, appName);
-                const cred = await secondaryApp.auth().createUserWithEmailAndPassword(email, tempPass);
+                const cleanCfg = {
+                    apiKey: AURA_FIREBASE_CONFIG.apiKey,
+                    authDomain: AURA_FIREBASE_CONFIG.authDomain,
+                    databaseURL: AURA_FIREBASE_CONFIG.databaseURL,
+                    projectId: AURA_FIREBASE_CONFIG.projectId,
+                    storageBucket: AURA_FIREBASE_CONFIG.storageBucket,
+                    messagingSenderId: AURA_FIREBASE_CONFIG.messagingSenderId,
+                    appId: AURA_FIREBASE_CONFIG.appId
+                };
+                secondaryApp = firebase.initializeApp(cleanCfg, appName);
+                const secAuth = secondaryApp.auth();
+                await secAuth.setPersistence(firebase.auth.Auth.Persistence.NONE);
+                const cred = await secAuth.createUserWithEmailAndPassword(email, tempPass);
                 const newUid = cred.user.uid;
+                try { await cred.user.updateProfile({ displayName: alias }); } catch (_) {}
+
                 const safeProfile = {
                     uid: newUid,
                     email: email,
@@ -3986,18 +4623,39 @@
                     createdAt: Date.now(),
                     updatedAt: Date.now()
                 };
+
                 const ref = getDbRef(`users/${newUid}`);
-                if (ref) await ref.set(safeProfile);
-                await secondaryApp.auth().signOut();
-                await secondaryApp.delete();
+                if (!ref) throw new Error('Realtime Database no está conectada.');
+                await ref.set(safeProfile);
+
+                try { await secAuth.signOut(); } catch (_) {}
+                try { await secondaryApp.delete(); } catch (_) {}
+                secondaryApp = null;
+
+                // Actualizar inmediatamente la lista local y asegurar listener RTDB
+                const idx = auraUsersDB.findIndex(u => u.uid === newUid);
+                if (idx >= 0) auraUsersDB[idx] = safeProfile;
+                else auraUsersDB.push(safeProfile);
+                if (!auraUsersRef) attachRealtimeUsersListener();
+                renderAuraAdminUserList();
+                updateDbStatusIndicators();
 
                 document.getElementById('admin-new-email').value = '';
                 document.getElementById('admin-new-name').value = '';
                 document.getElementById('admin-new-pass').value = '';
-                showStudioToast(`✅ Cuenta ${alias} (${email}) creada en Firebase Auth como ${role === 'subadmin' ? '🎧 Moderador' : '🔥 Dancer'}.`);
+                const okMsg = `✅ Cuenta ${alias} (${email}) guardada como ${role === 'subadmin' ? '🎧 Moderador' : '🔥 Dancer'}.`;
+                showAdminCreateStatus(okMsg, false);
+                showStudioToast(okMsg);
             } catch (e) {
-                if (secondaryApp) { try { await secondaryApp.delete(); } catch (_) {} }
-                showStudioToast(`⚠️ ${mapFirebaseAuthError(e && e.code)}`);
+                if (secondaryApp) {
+                    try { await secondaryApp.auth().signOut(); } catch (_) {}
+                    try { await secondaryApp.delete(); } catch (_) {}
+                }
+                const errText = mapFirebaseAuthError(e && e.code, e && e.message);
+                showAdminCreateStatus(`⚠️ ${errText}`, true);
+                showStudioToast(`⚠️ ${errText}`);
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerText = '➕'; }
             }
         }
 
@@ -4981,33 +5639,91 @@
             }
         }
 
-        // --- FRASES NEÓN AUTOMÁTICAS CADA 3 MINUTOS (180 SEGUNDOS) ---
+        // --- MENSAJES NEÓN DE COMUNIDAD TIKTOK-SAFE (CADA 5 MINUTOS POR DEFECTO) ---
         const NEON_CTA_PHRASES = [
-            { text: '❤️ ¡LIKE POR FAVOR! ❤️', sub: 'APOYA EL SHOW CON MUCHOS LIKES EN VIVO', kicker: '🔥 META DE LIKES EN VIVO 🔥', border: '#ec4899', glow: '0 0 18px #ec4899, 0 0 42px #f43f5e, 0 0 70px #ec4899', hex: 0xff1493 },
-            { text: '💖 ¡ENVÍA TU QUIÉREME! 💖', sub: 'ACTIVA EFECTOS ESPECIALES Y COREOGRAFÍAS', kicker: '🎁 REGALOS & EFECTOS 3D 🎁', border: '#fb7185', glow: '0 0 18px #fb7185, 0 0 42px #facc15, 0 0 70px #f43f5e', hex: 0xf43f5e },
-            { text: '🔔 ¡SUSCRÍBETE AL CANAL! 🔔', sub: 'NO TE PIERDAS NINGÚN STAGE DE ALTA MODA', kicker: '⭐ COMUNIDAD VIP EN VIVO ⭐', border: '#22d3ee', glow: '0 0 18px #22d3ee, 0 0 42px #3b82f6, 0 0 70px #22d3ee', hex: 0x22d3ee },
-            { text: '👆 ¡COMPARTE Y DALE TAP TAP A LA PANTALLA! ✨', sub: 'COMPARTAMOS EL LIVE PARA LLEGAR A MÁS GENTE', kicker: '🚀 HAZTE VIRAL CON NOSOTROS 🚀', border: '#facc15', glow: '0 0 18px #facc15, 0 0 42px #a855f7, 0 0 70px #f59e0b', hex: 0xfacc15 }
+            { text: '✨ ¡BIENVENIDOS A AURA LIVE STUDIO! ✨', sub: 'DISFRUTA EL SHOW DE ALTA MODA Y BAILE TROPICAL EN VIVO', kicker: '🎬 SHOW MUSICAL EN DIRECTO 🎬', border: '#22d3ee', glow: '0 0 14px #22d3ee, 0 0 32px #3b82f6', hex: 0x22d3ee },
+            { text: '🎶 ¿QUÉ RITMO QUIERES VER AHORA? 🎶', sub: 'COMENTA EN EL CHAT: SALSA, CUMBIA, BACHATA O MERENGUE', kicker: '🌴 INTERACCIÓN EN VIVO 🌴', border: '#ec4899', glow: '0 0 14px #ec4899, 0 0 32px #a855f7', hex: 0xff1493 },
+            { text: '👗 ALTA COSTURA & COREOGRAFÍAS 3D 👗', sub: '8 SILUETAS EDITORIALES Y 12 PASOS TROPICALES EN PISTA', kicker: '✨ PASARELA 2026 ✨', border: '#facc15', glow: '0 0 14px #facc15, 0 0 32px #f59e0b', hex: 0xfacc15 },
+            { text: '🌟 ¡GRACIAS POR ACOMPAÑARNOS! 🌟', sub: 'CONVERSA CON EL ANFITRIÓN Y ELIGE EL PRÓXIMO BLOQUE', kicker: '💜 COMUNIDAD AURA LIVE 💜', border: '#a855f7', glow: '0 0 14px #a855f7, 0 0 32px #22d3ee', hex: 0xa855f7 }
         ];
 
         const DEFAULT_AURA_ADS = {
-            mainSign: 'AURA LIVE STUDIO 2026 • ALTA MODA & BAILE EN VIVO',
+            mainSign: 'AURA LIVE STUDIO 2026 • ALTA MODA, MÚSICA Y BAILE EN VIVO',
             banners: [
-                '🔥 ESTAMOS ACTIVOS - DJ EN LA CASA - MODEL BOLIVIA ENTRETENIMIENTO DIGITAL CONTACTOS AL +591 68318417 🔥',
-                '🎰 DINÁMICAS DE SUERTE VIRTUAL & STREAMING MUSIC DANCE - MODEL BOLIVIA CONTACTOS AL +591 68318417 🎰',
-                '🚀 HAZTE VIRAL - PARTICIPA EN LIVE CON TUS REGALOS PARA LLEVARTE GRANDES PREMIOS - CONTACTOS AL +591 68318417 💃',
-                '✨ MANDA TUS REGALOS PARA VER EFECTOS ÉPICOS DE LOS PERSONAJES EN ALTA COSTURA - MODEL BOLIVIA ENTRETENIMIENTO DIGITAL ✨'
+                '✨ BIENVENIDOS A AURA LIVE STUDIO 2026 • SHOW DE ALTA COSTURA Y RITMOS TROPICALES EN VIVO ✨',
+                '🎶 COMENTA EN EL CHAT TU RITMO FAVORITO: SALSA CALEÑA, CUMBIA, BACHATA, MERENGUE O SAMBA 💃',
+                '👗 PASARELA EDITORIAL 3D • 8 DISEÑOS DE ALTA MODA Y COREOGRAFÍAS EN TIEMPO REAL 🎬',
+                '🌟 GRACIAS POR SER PARTE DEL ESPECTÁCULO • INTERACTÚA EN EL CHAT CON EL ANFITRIÓN 🌟'
             ],
-            preset1: '👍 Suscríbete al canal y deja tu like para apoyarnos',
-            preset2: '💼 Servicios Digitales Model Bolivia para plataformas comerciales',
-            preset3: '✨ Compra tu tratamiento estético dermatológico para aclarar la piel y obtén premios o beneficios',
+            preset1: '✨ Bienvenidos a Aura Live Studio 2026 • Show de Alta Moda y Baile Tropical en Vivo',
+            preset2: '🎶 Comenta en el chat qué ritmo tropical quieres ver: Salsa, Cumbia, Bachata o Merengue',
+            preset3: '👗 Colección Editorial 2026 • 8 Siluetas de Alta Costura y Coreografías en Tiempo Real',
             customDraft: ''
         };
+
+        // Validador TikTok-Safe para evitar restricciones por azar, premios, teléfonos o contenido comercial sensible
+        function validateTikTokSafeAdText(text) {
+            const s = String(text || '');
+            const issues = [];
+            if (/(\+?\d[\d\s\-]{6,}\d)/.test(s) || /whatsapp|wa\.me|tel[eé]fono|contacto\s+al/i.test(s)) {
+                issues.push('Evita números de teléfono o desvío a WhatsApp (riesgo de redirección externa).');
+            }
+            if (/🎰|suerte\s+virtual|rifa|sorteo|ruleta|apuesta|azar|ganador|grandes\s+premios|a\s+cambio\s+de\s+(tus\s+)?regal/i.test(s)) {
+                issues.push('Evita términos de azar, sorteos o premios a cambio de regalos (política de Gambling/Giveaways).');
+            }
+            if (/aclarar\s+la\s+piel|tratamiento\s+est[eé]tico|dermatol[oó]gico|bajar\s+de\s+peso/i.test(s)) {
+                issues.push('Evita afirmaciones cosméticas/médicas no declaradas en directo.');
+            }
+            return issues;
+        }
+
+        function previewAdSafetyCheck(val) {
+            const box = document.getElementById('aura-ad-safety-warning');
+            if (!box) return;
+            const issues = validateTikTokSafeAdText(val);
+            if (issues.length > 0) {
+                box.innerText = '🛡️ Alerta TikTok-Safe: ' + issues.join(' ');
+                box.classList.remove('hidden');
+            } else {
+                box.classList.add('hidden');
+            }
+        }
+
+        // Cámara opcional del Anfitrión (PiP) para presencia real en TikTok LIVE
+        let hostPipStream = null;
+        async function toggleHostCamPiP() {
+            const box = document.getElementById('host-pip-container');
+            const video = document.getElementById('host-pip-video');
+            const btn = document.getElementById('btn-hud-hostcam');
+            if (hostPipStream) {
+                hostPipStream.getTracks().forEach(t => t.stop());
+                hostPipStream = null;
+                if (video) video.srcObject = null;
+                if (box) box.classList.add('hidden');
+                if (btn) btn.className = 'bg-slate-800 hover:bg-emerald-900 text-emerald-300 border border-emerald-400/60 font-black text-[10px] px-2 py-1.5 rounded-xl flex items-center gap-1 active:scale-95';
+                showStudioToast('🎥 Cámara Host PiP desactivada.');
+                return;
+            }
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showStudioToast('⚠️ Tu navegador no permite activar la cámara en esta vista.');
+                return;
+            }
+            try {
+                hostPipStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 320, height: 420 }, audio: false });
+                if (video) video.srcObject = hostPipStream;
+                if (box) box.classList.remove('hidden');
+                if (btn) btn.className = 'bg-emerald-500 text-slate-950 border border-white font-black text-[10px] px-2 py-1.5 rounded-xl flex items-center gap-1 active:scale-95 shadow';
+                showStudioToast('🎥 Cámara Anfitrión PiP activa (presencia real en vivo).');
+            } catch (e) {
+                showStudioToast('⚠️ No se pudo acceder a la cámara. Concede permiso o usa tu micrófono en vivo.');
+            }
+        }
 
         let auraAdsMap = {};
         let currentUserAds = { ...DEFAULT_AURA_ADS, banners: [...DEFAULT_AURA_ADS.banners] };
         let autoNeonEnabled = true;
-        let autoNeonIntervalSec = 60; // Cada 1 minuto por defecto
-        let autoNeonCountdownSec = 15; // Primer mensaje visible pronto y luego cada 60s
+        let autoNeonIntervalSec = 300; // Cada 5 minutos por defecto (TikTok-Safe)
+        let autoNeonCountdownSec = 300;
         let autoNeonStepIndex = 0;
         let savedLedAdCursor = 0;
         let isLedMarqueeVisible = true;
@@ -5254,6 +5970,12 @@
                 showStudioToast('⚠️ Escribe un anuncio LED antes de emitir.');
                 return;
             }
+            const safetyIssues = validateTikTokSafeAdText(val);
+            if (safetyIssues.length > 0) {
+                previewAdSafetyCheck(val);
+                showStudioToast('🛡️ Bloqueado por TikTok-Safe: ' + safetyIssues[0]);
+                return;
+            }
             currentUserAds.customDraft = val;
             if (!currentUserAds.banners.includes(val)) {
                 currentUserAds.banners.unshift(val);
@@ -5312,6 +6034,12 @@
             const p2 = (document.getElementById('aura-edit-preset-2').value || '').trim();
             const p3 = (document.getElementById('aura-edit-preset-3').value || '').trim();
 
+            const combinedCheck = [mainSign, bannersRaw, p1, p2, p3].join(' ');
+            const safetyIssues = validateTikTokSafeAdText(combinedCheck);
+            if (safetyIssues.length > 0) {
+                showStudioToast('🛡️ Revisa tus textos (TikTok-Safe): ' + safetyIssues[0]);
+                return;
+            }
             const bannersArr = bannersRaw.split('|').map(s => s.trim()).filter(Boolean);
             currentUserAds.mainSign = mainSign || DEFAULT_AURA_ADS.mainSign;
             currentUserAds.banners = bannersArr.length > 0 ? bannersArr : [...DEFAULT_AURA_ADS.banners];
@@ -5442,15 +6170,15 @@
         function initStudio3D() {
             const container = document.getElementById('webgl-stage');
             scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x03040b, 0.025);
+            scene.fog = new THREE.FogExp2(0x231533, 0.0052);
 
-            camera = new THREE.PerspectiveCamera(48, window.innerWidth / window.innerHeight, 0.2, 65);
+            camera = new THREE.PerspectiveCamera(44, window.innerWidth / window.innerHeight, 0.2, 260);
             renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
-            renderer.setClearColor(0x03040b);
+            renderer.setClearColor(0x16102b);
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            renderer.toneMappingExposure = 1.18;
+            renderer.toneMappingExposure = 1.22;
             container.appendChild(renderer.domElement);
 
             // Entorno de Estudio Fotográfico Procedural (Softboxes PBR) para reflejos reales en oro, cromo, seda y charol
@@ -5461,8 +6189,9 @@
                 const ectx = envCanvas.getContext('2d');
                 const envGrad = ectx.createLinearGradient(0, 0, 0, 256);
                 envGrad.addColorStop(0, '#1e1b4b');
-                envGrad.addColorStop(0.45, '#0f172a');
-                envGrad.addColorStop(1, '#03040b');
+                envGrad.addColorStop(0.48, '#c2415c');
+                envGrad.addColorStop(0.62, '#fbbf24');
+                envGrad.addColorStop(1, '#0f172a');
                 ectx.fillStyle = envGrad;
                 ectx.fillRect(0, 0, 512, 256);
                 // Softboxes de estudio editorial (blanco cálido, oro, cian y magenta)
@@ -5506,6 +6235,9 @@
                 userCameraAzimuth -= (e.clientX - prevPointerX) * 0.006;
                 prevPointerX = e.clientX;
             });
+            container.addEventListener('wheel', (e) => {
+                userCameraZoomScale = Math.max(0.75, Math.min(1.65, userCameraZoomScale + e.deltaY * 0.0006));
+            }, { passive: true });
 
             window.addEventListener('resize', () => {
                 camera.aspect = window.innerWidth / window.innerHeight;
@@ -5541,32 +6273,34 @@
             animateStudioLoop();
         }
 
+        let userCameraZoomScale = 1.0;
+
         function updateBroadcastCamera(timeSec, dt) {
             let activeCam = currentCameraMode;
             if (activeCam === 'auto_tv') {
-                const tvCuts = ['front_wide', 'low_hero', 'closeup_catwalk', 'drone_360'];
-                activeCam = tvCuts[Math.floor(timeSec / 6.5) % tvCuts.length];
+                const tvCuts = ['front_wide', 'drone_360', 'low_hero', 'closeup_catwalk'];
+                activeCam = tvCuts[Math.floor(timeSec / 7.5) % tvCuts.length];
             }
 
             const isPortrait = window.innerWidth < window.innerHeight;
-            const distMul = isPortrait ? 1.28 : 1.0;
+            const distMul = (isPortrait ? 1.32 : 1.0) * userCameraZoomScale;
 
             if (activeCam === 'low_hero') {
-                camera.position.set(Math.sin(timeSec * 0.6 + userCameraAzimuth) * 6.8 * distMul, 1.45, Math.cos(timeSec * 0.6 + userCameraAzimuth) * 7.2 * distMul);
-                camera.lookAt(0, 2.85, 0.2);
+                camera.position.set(Math.sin(timeSec * 0.45 + userCameraAzimuth) * 11.8 * distMul, 2.15, Math.cos(timeSec * 0.45 + userCameraAzimuth) * 12.2 * distMul);
+                camera.lookAt(0, 2.55, -0.2);
             } else if (activeCam === 'drone_360') {
-                const ang = timeSec * 0.55 + userCameraAzimuth;
-                camera.position.set(Math.sin(ang) * 9.5 * distMul, 4.4 + Math.sin(timeSec * 1.2) * 0.8, Math.cos(ang) * 9.5 * distMul);
-                camera.lookAt(0, 2.45, -0.3);
+                const ang = timeSec * 0.35 + userCameraAzimuth;
+                camera.position.set(Math.sin(ang) * 15.8 * distMul, 5.4 + Math.sin(timeSec * 0.9) * 0.85, Math.cos(ang) * 15.8 * distMul);
+                camera.lookAt(0, 2.35, -0.3);
             } else if (activeCam === 'closeup_catwalk') {
-                camera.position.set(Math.sin(timeSec * 0.4 + userCameraAzimuth) * 2.2, 2.95, 5.2 * distMul);
-                camera.lookAt(0, 2.85, 0.8);
+                camera.position.set(Math.sin(timeSec * 0.35 + userCameraAzimuth) * 3.8 * distMul, 2.95, 8.8 * distMul);
+                camera.lookAt(0, 2.65, 0.4);
             } else if (activeCam === 'top_kaleido') {
-                camera.position.set(Math.sin(timeSec * 0.5) * 2.5, 11.5 * distMul, 2.5);
+                camera.position.set(Math.sin(timeSec * 0.4) * 4.5, 16.2 * distMul, 6.2 * distMul);
                 camera.lookAt(0, 1.8, -0.4);
             } else {
-                camera.position.set(Math.sin(userCameraAzimuth) * 8.8 * distMul, 3.65, Math.cos(userCameraAzimuth) * 8.8 * distMul);
-                camera.lookAt(0, 2.45, -0.2);
+                camera.position.set(Math.sin(userCameraAzimuth) * 14.2 * distMul, 4.15, Math.cos(userCameraAzimuth) * 14.2 * distMul);
+                camera.lookAt(0, 2.35, -0.2);
             }
         }
 
@@ -5646,11 +6380,22 @@
             }
             beatPulseIntensity = Math.max(0, beatPulseIntensity - dt * 4.5);
 
-            // Animar Túnel Infinito LED, Ecualizador 3D y Haces de Luz
+            // Animar Arcos Luminosos Abiertos y Brisa Tropical en las Palmeras de Santa Cruz 360°
             tunnelRings.forEach((ring, idx) => {
-                ring.rotation.z = timeSec * 0.35 * (idx % 2 === 0 ? 1 : -1) + idx * 0.1;
-                const sc = 1.0 + beatPulseIntensity * 0.06;
+                const sc = 1.0 + beatPulseIntensity * 0.04;
                 ring.scale.set(sc, sc, 1);
+            });
+            tropicalPalmFronds.forEach((pf) => {
+                pf.crown.rotation.z = Math.sin(timeSec * 1.15 + pf.phase) * 0.06;
+                pf.crown.rotation.x = Math.cos(timeSec * 0.9 + pf.phase) * 0.04;
+            });
+            urbanTrafficCars.forEach((car) => {
+                car.angle += car.speed * dt;
+                const x = Math.sin(car.angle) * car.radius;
+                const z = Math.cos(car.angle) * car.radius;
+                car.mesh.position.set(x, 0, z);
+                const dir = car.speed >= 0 ? 1 : -1;
+                car.mesh.rotation.y = car.angle + (dir > 0 ? Math.PI / 2 : -Math.PI / 2);
             });
 
             equalizerBars3D.forEach((bar, idx) => {
