@@ -3998,6 +3998,7 @@
         let auraFirebaseApp = null;
         let auraFirebaseAuth = null;
         let auraFirebaseDB = null;
+        let auraRtdbConnected = false;
         let auraUsersRef = null;
         let auraUsersDB = [];
         let currentAuraUser = null;        // Display name o email del usuario autenticado
@@ -4006,20 +4007,53 @@
         let isSpectatorMode = false;
         let currentAuthFormMode = 'login'; // 'login' | 'register'
 
+        function getCleanFirebaseConfig() {
+            return {
+                apiKey: AURA_FIREBASE_CONFIG.apiKey,
+                authDomain: AURA_FIREBASE_CONFIG.authDomain,
+                databaseURL: AURA_FIREBASE_CONFIG.databaseURL,
+                projectId: AURA_FIREBASE_CONFIG.projectId,
+                storageBucket: AURA_FIREBASE_CONFIG.storageBucket,
+                messagingSenderId: AURA_FIREBASE_CONFIG.messagingSenderId,
+                appId: AURA_FIREBASE_CONFIG.appId
+            };
+        }
+
+        function withTimeout(promise, ms = 9000, timeoutCode = 'RTDB_TIMEOUT') {
+            let timer = null;
+            const timeoutPromise = new Promise((_, reject) => {
+                timer = setTimeout(() => {
+                    const err = new Error('La conexión con Firebase tardó demasiado en responder.');
+                    err.code = timeoutCode;
+                    reject(err);
+                }, ms);
+            });
+            return Promise.race([promise, timeoutPromise]).finally(() => {
+                if (timer) clearTimeout(timer);
+            });
+        }
+
         function initFirebaseProductionServices() {
             try {
                 if (typeof firebase === 'undefined') return false;
                 if (!firebase.apps.length) {
-                    auraFirebaseApp = firebase.initializeApp(AURA_FIREBASE_CONFIG);
+                    auraFirebaseApp = firebase.initializeApp(getCleanFirebaseConfig());
                 } else {
                     auraFirebaseApp = firebase.app();
                 }
                 auraFirebaseAuth = firebase.auth(auraFirebaseApp);
                 auraFirebaseDB = firebase.database(auraFirebaseApp);
+                try {
+                    auraFirebaseDB.ref('.info/connected').on('value', (snap) => {
+                        auraRtdbConnected = snap.val() === true;
+                        updateDbStatusIndicators();
+                    });
+                } catch (_) {}
                 return true;
             } catch (e) {
                 auraFirebaseAuth = null;
                 auraFirebaseDB = null;
+                auraRtdbConnected = false;
                 return false;
             }
         }
@@ -4177,13 +4211,13 @@
             }
             try {
                 const payload = buildAuraDatabasePayload();
-                await getDbRef('meta').set(payload.meta);
-                await getDbRef('stagesDns').set(payload.stagesDns);
-                await getDbRef('showConfig').set(payload.showConfig);
-                await getDbRef('giftsStats').set(payload.giftsStats);
+                await withTimeout(getDbRef('meta').set(payload.meta), 8000);
+                await withTimeout(getDbRef('stagesDns').set(payload.stagesDns), 8000);
+                await withTimeout(getDbRef('showConfig').set(payload.showConfig), 8000);
+                await withTimeout(getDbRef('giftsStats').set(payload.giftsStats), 8000);
                 if (showFeedback) showStudioToast('☁️ Esquema sincronizado en Firebase Realtime Database.');
             } catch (e) {
-                if (showFeedback) showStudioToast('⚠️ Error al sincronizar RTDB: verifica tus Reglas de Seguridad en Firebase.');
+                if (showFeedback) showStudioToast(`⚠️ Error al sincronizar RTDB: ${mapFirebaseAuthError(e && e.code, e && e.message)}`);
             }
             updateDbStatusIndicators();
         }
@@ -4253,13 +4287,13 @@
                 currentAuraUid = fbUser.uid;
                 try {
                     const userNodeRef = getDbRef(`users/${fbUser.uid}`);
-                    const snap = userNodeRef ? await userNodeRef.once('value') : null;
+                    const snap = userNodeRef ? await withTimeout(userNodeRef.once('value'), 8000) : null;
                     let profile = snap && snap.exists() ? { ...snap.val(), uid: fbUser.uid } : null;
 
                     if (!profile) {
                         const pendingAlias = (document.getElementById('aura-login-alias')?.value || '').trim();
                         profile = buildDefaultProfileForFirebaseUser(fbUser, pendingAlias);
-                        if (userNodeRef) await userNodeRef.set(profile);
+                        if (userNodeRef) await withTimeout(userNodeRef.set(profile), 8000);
                     } else if ((fbUser.email || '').toLowerCase() === AURA_SUPER_ADMIN_EMAIL.toLowerCase() && profile.role !== 'admin') {
                         profile.role = 'admin';
                         profile.hasGameAccess = true;
@@ -4269,7 +4303,7 @@
                         profile.canManageGifts = true;
                         profile.canCreateSubAdmins = true;
                         profile.updatedAt = Date.now();
-                        if (userNodeRef) await userNodeRef.update(profile);
+                        if (userNodeRef) await withTimeout(userNodeRef.update(profile), 8000);
                     }
 
                     if (profile.hasGameAccess === false) {
@@ -4290,10 +4324,12 @@
                     if (profile.role === 'admin') {
                         const metaRef = getDbRef('meta');
                         if (metaRef) {
-                            const mSnap = await metaRef.once('value');
-                            if (!mSnap.exists()) {
-                                await syncAuraDatabaseToCloud(false);
-                            }
+                            try {
+                                const mSnap = await withTimeout(metaRef.once('value'), 6000);
+                                if (!mSnap.exists()) {
+                                    await syncAuraDatabaseToCloud(false);
+                                }
+                            } catch (_) {}
                         }
                     }
 
@@ -4302,13 +4338,17 @@
                     const roleTxt = profile.role === 'admin' ? '👑 Superusuario' : (profile.role === 'subadmin' ? '🎧 Moderador' : '🔥 Dancer');
                     showStudioToast(`✅ Sesión verificada: ${currentAuraUser} (${roleTxt})`);
                 } catch (err) {
-                    currentAuraProfile = buildDefaultProfileForFirebaseUser(fbUser);
+                    const pendingAlias = (document.getElementById('aura-login-alias')?.value || '').trim();
+                    currentAuraProfile = buildDefaultProfileForFirebaseUser(fbUser, pendingAlias);
                     currentAuraUser = currentAuraProfile.name;
                     closeAuraLoginModal();
                     updateAuthHudUI();
                     applyUserPermissionsToUI();
                     loadAuraAdsForCurrentUser();
-                    showStudioToast(`✅ Conectado como ${currentAuraUser} (revisa reglas RTDB para sincronización completa).`);
+                    attachRealtimeUsersListener();
+                    updateDbStatusIndicators();
+                    const reason = mapFirebaseAuthError(err && err.code, err && err.message);
+                    showStudioToast(`⚠️ Entraste como ${currentAuraUser}, pero RTDB falló: ${reason}`);
                 }
             });
         }
@@ -4373,8 +4413,12 @@
                 'auth/email-already-in-use': 'Ese correo ya existe en Firebase Auth. Usa otro correo o inicia sesión con esa cuenta.',
                 'auth/weak-password': 'La contraseña debe tener al menos 6 caracteres.',
                 'auth/operation-not-allowed': 'Activa el proveedor "Correo electrónico/Contraseña" en Firebase Console → Authentication → Sign-in method.',
+                'auth/operation-not-supported-in-this-environment': 'Este entorno restringe el almacenamiento local de sesión. Abre el juego desde GitHub Pages (HTTPS).',
+                'auth/unauthorized-domain': 'Dominio no autorizado en Firebase Auth. Agrégalo en Firebase Console → Authentication → Settings → Authorized domains.',
+                'auth/invalid-api-key': 'La API Key de Firebase no es válida.',
                 'auth/too-many-requests': 'Demasiados intentos. Espera un momento antes de reintentar.',
-                'auth/network-request-failed': 'Sin conexión con Firebase. Verifica tu red.',
+                'auth/network-request-failed': 'Sin respuesta de Firebase Auth. Verifica tu conexión o prueba desde GitHub Pages (HTTPS).',
+                'RTDB_TIMEOUT': 'Realtime Database no respondió a tiempo (timeout). Verifica tu conexión, las Reglas RTDB en Firebase Console o abre desde GitHub Pages.',
                 'PERMISSION_DENIED': 'Permiso denegado en Realtime Database. Abre "🗄️ Base de Datos & Reglas", copia las reglas con tu UID de Superusuario y pégalas en Firebase Console.'
             };
             if (code && map[code]) return map[code];
@@ -4387,27 +4431,56 @@
             const pass = (document.getElementById('aura-login-pass')?.value || '').trim();
             const remember = document.getElementById('aura-chk-autologin')?.checked !== false;
             const errEl = document.getElementById('aura-login-error');
+            const submitBtn = document.getElementById('btn-auth-submit');
+            const prevBtnText = submitBtn ? submitBtn.innerText : '';
             if (errEl) errEl.classList.add('hidden');
 
             if (!email || !email.includes('@')) { showLoginError('Ingresa un correo electrónico válido.'); return; }
             if (pass.length < 6) { showLoginError('La contraseña debe tener al menos 6 caracteres.'); return; }
             if (!auraFirebaseAuth) { showLoginError('Firebase Auth no pudo inicializarse en este navegador.'); return; }
 
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerText = currentAuthFormMode === 'register' ? '⏳ Creando cuenta...' : '⏳ Verificando acceso...';
+            }
+
             try {
-                const persistence = remember
+                // Fallback seguro de persistencia para WebViews, modo incógnito o iframes
+                const preferred = remember
                     ? firebase.auth.Auth.Persistence.LOCAL
                     : firebase.auth.Auth.Persistence.SESSION;
-                await auraFirebaseAuth.setPersistence(persistence);
+                try {
+                    await auraFirebaseAuth.setPersistence(preferred);
+                } catch (_) {
+                    try {
+                        await auraFirebaseAuth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+                    } catch (__) {
+                        try { await auraFirebaseAuth.setPersistence(firebase.auth.Auth.Persistence.NONE); } catch (___) {}
+                    }
+                }
 
                 if (currentAuthFormMode === 'register') {
-                    await auraFirebaseAuth.createUserWithEmailAndPassword(email, pass);
+                    await withTimeout(
+                        auraFirebaseAuth.createUserWithEmailAndPassword(email, pass),
+                        12000,
+                        'auth/network-request-failed'
+                    );
                 } else {
-                    await auraFirebaseAuth.signInWithEmailAndPassword(email, pass);
+                    await withTimeout(
+                        auraFirebaseAuth.signInWithEmailAndPassword(email, pass),
+                        12000,
+                        'auth/network-request-failed'
+                    );
                 }
                 const passInp = document.getElementById('aura-login-pass');
                 if (passInp) passInp.value = '';
             } catch (e) {
-                showLoginError(mapFirebaseAuthError(e && e.code));
+                showLoginError(mapFirebaseAuthError(e && e.code, e && e.message));
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = prevBtnText || (currentAuthFormMode === 'register' ? '✨ Crear Cuenta en Firebase Auth' : '🚀 Entrar al Espectáculo');
+                }
             }
         }
 
@@ -4591,21 +4664,18 @@
             showAdminCreateStatus('⏳ Creando cuenta en Firebase Auth y guardando perfil en Realtime DB...', false);
 
             let secondaryApp = null;
+            let authUserCreated = false;
             try {
                 const appName = 'auraAdminCreator_' + Date.now();
-                const cleanCfg = {
-                    apiKey: AURA_FIREBASE_CONFIG.apiKey,
-                    authDomain: AURA_FIREBASE_CONFIG.authDomain,
-                    databaseURL: AURA_FIREBASE_CONFIG.databaseURL,
-                    projectId: AURA_FIREBASE_CONFIG.projectId,
-                    storageBucket: AURA_FIREBASE_CONFIG.storageBucket,
-                    messagingSenderId: AURA_FIREBASE_CONFIG.messagingSenderId,
-                    appId: AURA_FIREBASE_CONFIG.appId
-                };
-                secondaryApp = firebase.initializeApp(cleanCfg, appName);
+                secondaryApp = firebase.initializeApp(getCleanFirebaseConfig(), appName);
                 const secAuth = secondaryApp.auth();
-                await secAuth.setPersistence(firebase.auth.Auth.Persistence.NONE);
-                const cred = await secAuth.createUserWithEmailAndPassword(email, tempPass);
+                try { await secAuth.setPersistence(firebase.auth.Auth.Persistence.NONE); } catch (_) {}
+                const cred = await withTimeout(
+                    secAuth.createUserWithEmailAndPassword(email, tempPass),
+                    12000,
+                    'auth/network-request-failed'
+                );
+                authUserCreated = true;
                 const newUid = cred.user.uid;
                 try { await cred.user.updateProfile({ displayName: alias }); } catch (_) {}
 
@@ -4626,7 +4696,7 @@
 
                 const ref = getDbRef(`users/${newUid}`);
                 if (!ref) throw new Error('Realtime Database no está conectada.');
-                await ref.set(safeProfile);
+                await withTimeout(ref.set(safeProfile), 9000, 'RTDB_TIMEOUT');
 
                 try { await secAuth.signOut(); } catch (_) {}
                 try { await secondaryApp.delete(); } catch (_) {}
@@ -4652,8 +4722,11 @@
                     try { await secondaryApp.delete(); } catch (_) {}
                 }
                 const errText = mapFirebaseAuthError(e && e.code, e && e.message);
-                showAdminCreateStatus(`⚠️ ${errText}`, true);
-                showStudioToast(`⚠️ ${errText}`);
+                const fullMsg = authUserCreated
+                    ? `⚠️ Cuenta creada en Firebase Auth, pero no se pudo guardar en Realtime DB: ${errText}`
+                    : `⚠️ ${errText}`;
+                showAdminCreateStatus(fullMsg, true);
+                showStudioToast(fullMsg);
             } finally {
                 if (btn) { btn.disabled = false; btn.innerText = '➕'; }
             }
@@ -4749,10 +4822,10 @@
             };
             try {
                 const ref = getDbRef(`users/${targetUid}`);
-                if (ref) await ref.update(patch);
+                if (ref) await withTimeout(ref.update(patch), 8000, 'RTDB_TIMEOUT');
                 showStudioToast(newRole === 'subadmin' ? `🎧 ¡${target.name} subió a Moderador!` : `🔥 ${target.name} pasó a Dancer.`);
             } catch (e) {
-                showStudioToast('⚠️ No se pudo actualizar el rol en Firebase RTDB.');
+                showStudioToast(`⚠️ Error al actualizar rol: ${mapFirebaseAuthError(e && e.code, e && e.message)}`);
             }
         }
 
@@ -4764,10 +4837,10 @@
             if (me.role !== 'admin' && !(me.role === 'subadmin' && me.canManageGifts && target.role === 'player')) return;
             try {
                 const ref = getDbRef(`users/${targetUid}`);
-                if (ref) await ref.update({ [field]: !target[field], updatedAt: Date.now() });
+                if (ref) await withTimeout(ref.update({ [field]: !target[field], updatedAt: Date.now() }), 8000, 'RTDB_TIMEOUT');
                 showStudioToast(`🛡️ Privilegio actualizado para ${target.name}.`);
             } catch (e) {
-                showStudioToast('⚠️ Error al actualizar privilegio en Firebase RTDB.');
+                showStudioToast(`⚠️ Error al actualizar privilegio: ${mapFirebaseAuthError(e && e.code, e && e.message)}`);
             }
         }
 
@@ -4838,9 +4911,9 @@
             if (eNs) eNs.innerText = AURA_FIREBASE_CONFIG.namespace;
             if (eCnt) eCnt.innerText = `${auraUsersDB.length} / ${Object.keys(auraAdsMap || {}).length}`;
             if (eSec) eSec.innerText = '🛡️ 100% Firebase Auth';
-            if (eCld) eCld.innerText = connected ? AURA_FIREBASE_CONFIG.projectId : 'Sin conexión';
-            if (ePill) ePill.innerText = connected ? '🟢 Firebase Conectado' : '🔴 Sin Conexión';
-            if (eLogin) eLogin.innerText = `🛡️ Proyecto: ${AURA_FIREBASE_CONFIG.projectId} • Auth + Realtime DB`;
+            if (eCld) eCld.innerText = connected ? (auraRtdbConnected ? `${AURA_FIREBASE_CONFIG.projectId} (Online)` : `${AURA_FIREBASE_CONFIG.projectId} (Sin RTDB)`) : 'Sin conexión';
+            if (ePill) ePill.innerText = !connected ? '🔴 Sin Conexión' : (auraRtdbConnected ? '🟢 RTDB En Línea' : '🟡 Conectando RTDB...');
+            if (eLogin) eLogin.innerText = `🛡️ ${AURA_FIREBASE_CONFIG.projectId} • ${auraRtdbConnected ? '🟢 RTDB Online' : '🟡 Conectando RTDB...'}`;
         }
 
         function copyRecommendedFirebaseRules() {
@@ -5806,7 +5879,7 @@
             hasPersonalCloudAds = false;
             if (currentAuraUid && auraFirebaseDB) {
                 try {
-                    const snap = await getDbRef(`ads/${currentAuraUid}`).once('value');
+                    const snap = await withTimeout(getDbRef(`ads/${currentAuraUid}`).once('value'), 6000);
                     if (snap.exists()) {
                         const cloudAds = snap.val();
                         auraAdsMap[currentAuraUid] = cloudAds;
@@ -5823,7 +5896,7 @@
                         applyCloudAdsObject(broadcastAdsCache);
                         return;
                     }
-                    const bSnap = await getDbRef('ads/broadcast').once('value');
+                    const bSnap = await withTimeout(getDbRef('ads/broadcast').once('value'), 6000);
                     if (bSnap.exists()) {
                         broadcastAdsCache = bSnap.val();
                         auraAdsMap.broadcast = broadcastAdsCache;
@@ -5846,14 +5919,14 @@
             auraAdsMap[currentAuraUid] = record;
             hasPersonalCloudAds = true;
             try {
-                await getDbRef(`ads/${currentAuraUid}`).set(record);
+                await withTimeout(getDbRef(`ads/${currentAuraUid}`).set(record), 8000, 'RTDB_TIMEOUT');
                 if (currentAuraProfile && (currentAuraProfile.role === 'admin' || currentAuraProfile.role === 'subadmin')) {
                     auraAdsMap.broadcast = record;
                     broadcastAdsCache = record;
-                    await getDbRef('ads/broadcast').set(record);
+                    await withTimeout(getDbRef('ads/broadcast').set(record), 8000, 'RTDB_TIMEOUT');
                 }
             } catch (e) {
-                showStudioToast('⚠️ No se pudieron guardar las publicidades en Firebase RTDB.');
+                showStudioToast(`⚠️ Error al guardar publicidades: ${mapFirebaseAuthError(e && e.code, e && e.message)}`);
             }
         }
 
@@ -6438,7 +6511,11 @@
         }
 
         window.addEventListener('load', () => {
-            initStudio3D();
+            try {
+                initStudio3D();
+            } catch (e) {
+                console.error('Error inicializando motor 3D:', e);
+            }
             initAuraAuthSystem();
         });
     </script>
